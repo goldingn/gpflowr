@@ -35,8 +35,10 @@ has <- function (x, name, which = c('element', 'attribute')) {
   # dollar insertion
   if (has(x, '$'))
     return (x[['$']](x, i, value))
-  else
-    return (x[[i]])
+  else {
+    x[[i]] <- value
+    return (x)
+  }
 }
 
 with.R6 <- function (data, expr, as = NULL, ...) {
@@ -91,13 +93,13 @@ with.R6 <- function (data, expr, as = NULL, ...) {
 # E.g.:
 #
 # foo <- R6Class('foo',
-#                private = list(x = NULL),
+#                public = list(x = NULL),
 #                active = list(
 #                  apples = function (value) {
 #                    if (missing(value))
-#                      return (private$x)
+#                      return (self$x)
 #                    else
-#                      private$x <- value
+#                      self$x <- value
 #                  }
 #                ))
 #
@@ -106,13 +108,13 @@ with.R6 <- function (data, expr, as = NULL, ...) {
 # tidy up later code. E.g.
 #
 # foo <- R6Class('foo',
-#                private = list(x = NULL),
+#                public = list(x = NULL),
 #                active = list(
 #                  apples = property('x')
 #                ))
 
 # functor to return a default active function
-property <- function (name, public = FALSE) {
+property <- function (name, public = TRUE) {
 
   obj <- paste(ifelse(public,
                       'self',
@@ -124,6 +126,7 @@ property <- function (name, public = FALSE) {
                       if (missing(value)) { return (%s) }
                       else {%s <- value}}', obj, obj)
 
-  eval(parse(text = fun_text))
+  fun <- eval(parse(text = fun_text))
+  fun
 
   }
