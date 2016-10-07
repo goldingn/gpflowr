@@ -4,6 +4,7 @@
 
 # Python dependencies
 sudo -H pip install --upgrade pip
+sudo -H pip install --upgrade setuptools 
 sudo -H pip install numpy
 # tensorflow for separate os
 if [ ${TRAVIS_OS_NAME} == "linux" ]; then
