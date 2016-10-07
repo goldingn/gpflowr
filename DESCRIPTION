@@ -3,7 +3,7 @@ Type: Package
 Title: Gaussian Process Modelling Using TensorFlow
 Version: 0.1.0
 Authors@R: c(
-	person("Nick", "Golding", role = c("aut", "cre"))
+	person("Nick", "Golding", role = c("aut", "cre"), email = "nick.golding.research@gmail.com")
 	)
 Description: A port of the GPflow python package to R. GPflowR implements Gaussian process models using Google's TensorFlow library (via the tensorflow R package). This enables automatic gradient construction via symbolic differentiation, efficient linear algebra, and portability to CPUs, GPUs, and across platforms. Like tensorflow, this package requires installation of python and TensorFlow.
 License: Apache License 2.0
