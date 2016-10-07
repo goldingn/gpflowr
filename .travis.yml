@@ -8,6 +8,7 @@ before_install:
 
 # Install covr for code coverage
 r_packages:
+ - testthat
  - covr
 
 # the tensorflow R API isn't on CRAN yet
