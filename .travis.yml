@@ -2,14 +2,9 @@ language: r
 cache: packages
 sudo: required
 
-services:
- - docker
 
 before_install:
- - docker pull earthlab/r-tensorflow
- - docker run -d -p 127.0.0.1:80:4567 earthlab/r-tensorflow /bin/sh -c "cd /root/r-tensorflow; bundle exec foreman start;"
- - docker ps -a
- - Rscript -e "installed.packages()"
+ - source travis_install.sh
 
 # Install covr for code coverage
 r_packages:
