@@ -2,4 +2,3 @@
 
 import(R6)
 import(tensorflow)
-import(testthat)
