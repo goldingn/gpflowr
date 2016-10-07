@@ -26,7 +26,7 @@ decorate.decorator <- function (decorator, fun, ...) {
 
 # coerce a function to a decorator
 as.decorator <- function (fun) {
-  stopifnot (inherits(cl, 'function'))
+  stopifnot (inherits(fun, 'function'))
   class(fun) <- c('decorate', class(fun))
   fun
 }
