@@ -48,7 +48,7 @@ Parentable <- R6Class('Parentable',
                                          inheritance_msg)
                           cat (msg)
 
-                        },
+                        }
 
                         # getstate <- function () {
                         #   d <- self.dict
@@ -122,9 +122,7 @@ Parentable <- R6Class('Parentable',
                             else
                               self$parent$highest_parent <- value
                           }
-
                         }
-
 
                       ))
 
@@ -165,7 +163,7 @@ Param <- R6Class('Param',
                    #   # return (pd.Series([v for v in samples], name=self.long_name))
                    # },
 
-                   make_tf_array <- function (free_array) {
+                   make_tf_array = function (free_array) {
                      # free_array is a tensorflow vector which will be the optimisation
                      # target, i.e. it will be free to take any value.
                      # Here we take that array, and transform and reshape it so that it can be
@@ -216,7 +214,7 @@ Param <- R6Class('Param',
                    },
 
 
-                   build_prior <- function () {
+                   build_prior = function () {
                      # Build a tensorflow representation of the prior density.
                      # The log Jacobian is included.
                      if (is.null(self$prior))
@@ -266,25 +264,17 @@ Param <- R6Class('Param',
                      super$setstate(d)
                      self$.log_jacobian <- NULL
                      self$fixed <- self$fixed
-                   },
+                   }
+                 ),
 
                  # point 'value' at the array
                  active = list(
                    value = property('.array'),
                    shape = function (value) dim(self$.array),
-                   size = function (value) prod(self$shape),
-
+                   size = function (value) prod(self$shape)
                  )
                  )
 
-def __init__(self, array, transform=transforms.Identity()):
-  Parentable.__init__(self)
-self._array = np.asarray(np.atleast_1d(array), dtype=np_float_type)
-self.transform = transform
-self._tf_array = None
-self._log_jacobian = None
-self.prior = None
-self.fixed = False
 # DataHolder <- R6Class('DataHolder',
 #                          inherit = Parentable,
 #                          public = list(
@@ -322,9 +312,9 @@ Parameterized <- R6Class('Parameterized',
 
                            print = function (...) {
                              cat ('Parameterized object\n')
-                           }
+                           },
 
-                           `$` <- function (x, i) {
+                           `$` = function (x, i) {
                              # return a tensorflow array if `x` is in tf_mode,
                              # and the object containing that array otherwise
                              o <- x[[i]]
