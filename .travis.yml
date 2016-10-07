@@ -11,8 +11,8 @@ r_packages:
  - covr
 
 # the tensorflow R API isn't on CRAN yet
-# r_github_packages:
-#  - rstudio/tensorflow
+r_github_packages:
+ - rstudio/tensorflow
  
 ## After success update the code coverage
 after_success:
