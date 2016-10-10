@@ -2,12 +2,17 @@ language: r
 cache: packages
 sudo: required
 
+# python update & TensorFlow installation
+before_install:
+ - source travis_install.sh
+
 # Install magick++ for pkgdown
 apt_packages:
  - libmagick++-dev
 
 # Install covr for code coverage
 r_packages:
+ - testthat
  - covr
 
 # The tensorflow R API isn't on CRAN yet, and we need the latest pkgdown and rmarkdown
@@ -37,14 +42,8 @@ env:
     - COMMIT_AUTHOR_EMAIL: "goldingn35@gmail.com" 
   matrix:
     - r: release
-      not_cran: true
-      r_check_args: "--no-manual"
-    - r: release
       not_cran: false
       r_check_args: "--no-manual --as--cran"
-    - r: devel
-      not_cran: true
-      r_check_args: "--no-manual"
     - r: devel
       not_cran: false
       r_check_args: "--no-manual --as--cran"
