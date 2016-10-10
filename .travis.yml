@@ -2,17 +2,24 @@ language: r
 cache: packages
 sudo: required
 
+# Install magick++ for pkgdown
+apt_packages:
+ - libmagick++-dev
+
 # Install covr for code coverage
 r_packages:
  - covr
 
-# the tensorflow R API isn't on CRAN yet
+# The tensorflow R API isn't on CRAN yet, and we need the latest pkgdown and rmarkdown
 r_github_packages:
  - rstudio/tensorflow
- 
+ - hadley/pkgdown 
+ - rstudio/rmarkdown
+
 ## After success update the code coverage
 after_success:
  - Rscript -e 'library(covr);codecov()'
+ - bash .deploy_pkgdown.sh
  
 # Warnings don't fail build
 warnings_are_errors: false
@@ -25,6 +32,9 @@ email:
  
 ## Set up the matrix of different runs
 env:
+  global:
+    - ENCRYPTION_LABEL: "53e3c88c3ce6"
+    - COMMIT_AUTHOR_EMAIL: "goldingn35@gmail.com" 
   matrix:
     - r: release
       not_cran: true
