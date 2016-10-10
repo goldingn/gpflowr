@@ -10,9 +10,10 @@ before_install:
 apt_packages:
  - libmagick++-dev
 
-# Install covr for code coverage
+# Install packages needed to documentation, testing and code coverage
 r_packages:
  - testthat
+ - roxygen2
  - covr
 
 # The tensorflow R API isn't on CRAN yet, and we need the latest pkgdown and rmarkdown
