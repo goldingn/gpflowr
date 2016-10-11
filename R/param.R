@@ -1,10 +1,14 @@
 # define R6 classes: Parentable, Param, DataHolder, Parameterized and ParamList
 # port of GPflow/GPflow/param.py
 
-#' A very simple class for objects in a tree, where each node contains a
-#' reference to '_parent'.
-##' This class can figure out its own name (by seeing what it's called by the
-##' _parent's __dict__) and also recurse up to the highest_parent.
+# ' @title Parentable class
+# '
+# ' @description A very simple class for objects in a tree, where each node contains a
+# ' reference to '_parent'.
+# '
+# ' @details This class can figure out its own name (by seeing what it's called by the
+# ' _parent's __dict__) and also recurse up to the highest_parent.
+# '
 Parentable <- R6Class('Parentable',
                       public = list(
                         
@@ -180,7 +184,7 @@ Param <- R6Class('Param',
                    prior = NULL,
                    fixed = FALSE,
                    
-                   initialize = function (array, transform = I) {
+                   initialize = function (array, transform = Identity$new()) {
                      self$value <- array
                      self$transform <- transform
                    },
@@ -217,7 +221,7 @@ Param <- R6Class('Param',
                      # fixed parameters are treated by tf.placeholder
                      if (self$fixed)
                        return (0)
-                     free_size <- self$transform$free_state_size(self$shape)
+                     free_size <- self$size
                      x_free <- free_array[1:free_size]
                      mapped_array <- self$transform$tf_forward(x_free)
                      self$.tf_array <- tf$reshape(mapped_array, self$shape)
@@ -225,14 +229,14 @@ Param <- R6Class('Param',
                      return (free_size)
                    },
                    
-                   # get_free_state = function () {
-                   #   # Take the current state of this variable, as stored in self.value, and
-                   #   # transform it to the 'free' state.
-                   #   # This is a numpy method.
-                   #   if (self$fixed)
-                   #     return (np.empty((0,), np_float_type))
-                   #   return (self$transform$backward(self$value$flatten())))
-                   # },
+                   get_free_state = function () {
+                     # Take the current state of this variable, as stored in
+                     # self.value, and transform it to the 'free' state. This is
+                     # a numpy method.
+                     if (self$fixed)
+                       return (0)
+                     return (self$transform$backward(self$value))
+                   },
                    
                    # get_feed_dict = function() {
                    #    # Return a dictionary matching up any fixed-placeholders to their values
@@ -249,11 +253,12 @@ Param <- R6Class('Param',
                      # This is a numpy method.
                      if (self$fixed)
                        return (0)
-                     free_size <- self$transform$free_state_size(self$shape)
-                     # new_array <- self$transform$forward(x[1:free_size])$reshape(self$shape)
-                     # assert new_array.shape == self.shape
-                     # self._array[...] = new_array
-                     return (free_size)
+
+                     new_x <- self$transform$forward(x)
+                     new_array <- array(new_x, dim = self$shape)
+                     stopifnot(all(dim(new_array) == dim(self$.array)))
+                     self$.array <-  new_array
+                     return (self$size)
                    },
                    
                    

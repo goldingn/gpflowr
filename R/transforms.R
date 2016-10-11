@@ -21,7 +21,7 @@ Transform <- R6Class('Transform',
                        
                      ))
 
-Identify <- R6Class('Identity',
+Identity <- R6Class('Identity',
                     inherit = Transform,
                     public = list(
                       
