@@ -11,7 +11,9 @@ function doCompile {
   # run pkgdown, put results in 'docs' directory,i
   # and don't paste the results of the examples
   # then copy the whole thing to `out`
-  Rscript -e "pkgdown::build_site(path = 'out', examples = FALSE)"
+  Rscript -e "pkgdown::build_site(path = 'docs', examples = FALSE)"
+  mkdir -p out
+  cp -R ./docs/* ./out/
 }
 
 # Pull requests and commits to other branches shouldn't try to deploy, just build to verify
