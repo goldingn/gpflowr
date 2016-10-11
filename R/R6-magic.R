@@ -41,6 +41,16 @@ has <- function (x, name, which = c('element', 'attribute')) {
   }
 }
 
+# overload str, so R6 classes can define their own
+# this needs to be registered properly (or loaded into the global environment) to work!
+str.R6 <- function (object, ...) {
+  # dollar insertion
+  if (has(object, 'str'))
+    return (object[['str']](object, ...))
+  else
+    print.R6ClassGenerator(object, ...)
+}
+
 with.R6 <- function (data, expr, as = NULL, ...) {
   # define a simple `with` syntax for R6 objects to safely execute modified
   # code, then clean up. This leans heavily on the `with` generic in the
@@ -138,3 +148,7 @@ get_hex <- function (nchar = 64) {
   vec <- sample(char, nchar, replace = TRUE)
   paste(vec, collapse = '')
 }
+
+# placeholder error function
+not_implemented_error <- function ()
+  stop ('method not implemented')
