@@ -7,34 +7,64 @@
 ##' _parent's __dict__) and also recurse up to the highest_parent.
 Parentable <- R6Class('Parentable',
                       public = list(
-
+                        
                         # enclosing env of parent
                         .parent_env = NULL,
-
+                        
+                        # own hex in parent's .hex_list 
+                        .hex = NULL,
+                        
+                        # named list of shas of children
+                        .hex_list = list(),
+                        
                         # set the environment of the parent
                         .set_parent_env = function (parent)
                           self$.parent_env <- parent$.__enclos_env__,
-
+                        
+                        # bespoke assignment, to build tree structure                        
                         `$<-` = function (x, i, value) {
                           # when setting values, if the new value is a parentable,
-                          # tell it who its parent is
-                          if (inherits(value, 'parentable'))
-                            value$.set_parent_env(self)
-
-                          # then assign
+                          # link the child (value) and parent (self)
+                          
+                          if (inherits(value, 'Parentable')){
+                            
+                            # generate unique hex to index the child in the parent
+                            hex <- get_hex()
+                            value[['.hex']] <- hex
+                            self[['.hex_list']][[i]] <- hex
+                            
+                            # and give the child the environment of the parent
+                            value[['.set_parent_env']](self)
+                            
+                          }
+                          
+                          # either way, assign the value
                           self[[i]] <- value
-
+                          
                         },
-
+                        
+                        # get the index to a child
+                        which_child = function (child) {
+                          
+                          if (!inherits(child, 'Parentable'))
+                            stop ('Parentables can only have children that are also Parentables')
+                          
+                          # return the index, retaining its name in the hex list
+                          idx <- match(child$.hex, self$.hex_list)
+                          names(idx) <- names(self$.hex_list)[idx]
+                          idx
+                          
+                        },
+                        
                         print = function (...) {
                           # find the classes ot which this object belongs and print them
-
+                          
                           classes <- class(self$clone())
-
+                          
                           main_class <- classes[1]
                           other_classes <- classes[-1]
                           other_classes <- other_classes[other_classes != 'R6']
-
+                          
                           if (length(other_classes) > 0) {
                             inheritance_msg <- sprintf('(inheriting from %s)\n',
                                                        paste(other_classes,
@@ -42,72 +72,85 @@ Parentable <- R6Class('Parentable',
                           } else {
                             inheritance_msg <- ''
                           }
-
+                          
                           msg <- sprintf('%s object\n%s',
                                          main_class,
                                          inheritance_msg)
                           cat (msg)
-
+                          
                         }
-
-                        # getstate <- function () {
-                        #   d <- self.dict
+                        
+                        # used for pickling, so ignore for now
+                        # would need to write a dict class
+                        # .getstate <- function () {
+                        # # get list of elements, remove parent, return list?
+                        #   d <- self$.dict
                         #   d$pop('_parent')
                         #   return (d)
                         # },
-
-                        # setstate = function (d) {
-                        #   self$dict$update(d)
+                        # .setstate = function (d) {
+                        # # replace list of elements with new list of elements, then remove parent?
+                        #   self$.dict$update(d)
                         #   self$parent <- NULL
                         # }
-
+                        
                       ),
+                      
                       active = list(
-
+                        
                         # make name and long_name properties
-
-                        # name = function () {
-                        #   # An automatically generated name, given by the
-                        #   # reference of the _parent to this instance
-                        #   if (is.null(self$parent()))
-                        #     return ('unnamed')
-                        #
-                        #   if (inherits(self$parent(), 'ParamList'))
-                        #     return (sprintf('item%i', self$parent()$.list$index(self)))
-                        #
-                        #   # matches = [key for key, value in self$parent()$__dict__$items()
-                        #   #            if value is self]
-                        #   matches = 0
-                        #
-                        #   if (length(matches) == 0)
-                        #     stop("mis-specified parent. This Param's .parent does not contain a reference to it.")
-                        #
-                        #   if (length(matches) > 1)
-                        #     stop("This Param appears to be doubly referenced by a parent")
-                        #
-                        #   matches[1]
-                        # },
-
-                        # long_name = function () {
-                        #   # This is a unique identifier for a param object
-                        #   # within a structure, made by concatenating the names
-                        #   # through the tree.
-                        #   if (is.null(self$parent()))
-                        #     return (self$name())
-                        #
-                        #   paste(self$parent()$long_name(),
-                        #         self$name(),
-                        #         collapse = '.')
-                        # }
-
+                        
+                        name = function (value) {
+                          
+                          # let the user know they can't assign names in this way
+                          if (!missing(value))
+                            warning ('name assignment ignored')
+                          
+                          # An automatically generated name, given by the
+                          # reference of the _parent to this instance
+                          if (is.null(self$parent))
+                            return ('unnamed')
+                          
+                          # get the index
+                          idx <- self$parent$which_child(self)
+                          
+                          if (inherits(self$parent, 'ParamList'))
+                            return (sprintf('item%i', self$parent$.list$index(self)))
+                          
+                          if (length(idx) == 0)
+                            stop("mis-specified parent. This Param's .parent does not contain a reference to it.")
+                          
+                          if (length(idx) > 1)
+                            stop("This Param appears to be doubly referenced by a parent")
+                          
+                          names(idx)
+                        },
+                        
+                        long_name = function (value) {
+                          # This is a unique identifier for a param object 
+                          # within a structure, made by concatenating the names 
+                          # through the tree.
+                          
+                          # let the user know they can't assign names in this way
+                          if (!missing(value))
+                            warning ('name assignment ignored')
+                          
+                          if (is.null(self$parent))
+                            return (self$name)
+                          
+                          paste(self$parent$long_name,
+                                self$name,
+                                sep = '$')
+                        },
+                        
                         parent = function (value) {
                           # get the parent object from its environment
                           if (missing(value))
                             self$.parent_env$self
                           else
                             self$.parent_env$self <- value
-                          },
-
+                        },
+                        
                         highest_parent = function (value) {
                           # A reference to the top of the tree, usually a Model
                           # instance
@@ -123,31 +166,31 @@ Parentable <- R6Class('Parentable',
                               self$parent$highest_parent <- value
                           }
                         }
-
+                        
                       ))
 
 Param <- R6Class('Param',
                  inherit = Parentable,
-
+                 
                  public = list(
-
+                   
                    .array = NULL,
                    .tf_array = NULL,
                    .log_jacobian = NULL,
                    prior = NULL,
                    fixed = FALSE,
-
+                   
                    initialize = function (array, transform = I) {
                      self$value <- array
                      self$transform <- transform
                    },
-
+                   
                    # get_parameter_dict = function (d)
                    #   d[[self$long_name]] <- self$value,
                    #
                    # set_parameter_dict = function (d)
                    #   self$value <- d[[self$long_name]],
-
+                   
                    # get_samples_df = function (samples) {
                    #   # Given a numpy array where each row is a valid free-state
                    #   # vector, return a pandas.DataFrame which contains the
@@ -162,7 +205,7 @@ Param <- R6Class('Param',
                    #   samples <- self$transform$forward(samples)
                    #   # return (pd.Series([v for v in samples], name=self.long_name))
                    # },
-
+                   
                    make_tf_array = function (free_array) {
                      # free_array is a tensorflow vector which will be the optimisation
                      # target, i.e. it will be free to take any value.
@@ -170,7 +213,7 @@ Param <- R6Class('Param',
                      # used to represent this parameter
                      # Then we return the number of elements that we've used to construct the
                      # array, so that it can be sliced for the next Param.
-
+                     
                      # fixed parameters are treated by tf.placeholder
                      if (self$fixed)
                        return (0)
@@ -181,7 +224,7 @@ Param <- R6Class('Param',
                      self$.log_jacobian <- self$transform$tf_log_jacobian(x_free)
                      return (free_size)
                    },
-
+                   
                    # get_free_state = function () {
                    #   # Take the current state of this variable, as stored in self.value, and
                    #   # transform it to the 'free' state.
@@ -190,7 +233,7 @@ Param <- R6Class('Param',
                    #     return (np.empty((0,), np_float_type))
                    #   return (self$transform$backward(self$value$flatten())))
                    # },
-
+                   
                    # get_feed_dict = function() {
                    #    # Return a dictionary matching up any fixed-placeholders to their values
                    #    d <- list()
@@ -198,7 +241,7 @@ Param <- R6Class('Param',
                    #      d[[self$.tf_array]] <- self$value
                    #    return (d)
                    # },
-
+                   
                    set_state = function (x) {
                      # Given a vector x representing the 'free' state of this Param, transform
                      # it 'forwards' and store the result in self._array. The values in
@@ -212,8 +255,8 @@ Param <- R6Class('Param',
                      # self._array[...] = new_array
                      return (free_size)
                    },
-
-
+                   
+                   
                    build_prior = function () {
                      # Build a tensorflow representation of the prior density.
                      # The log Jacobian is included.
@@ -223,28 +266,28 @@ Param <- R6Class('Param',
                        stop ("tensorflow array has not been initialized")
                      else
                        return (self$prior$logp(self$.tf_array) + self$.log_jacobian)
-                   },
-
-                   `$<-` = function (x, i, value) {
-                     # When some attributes are set, we need to recompile the tf model before
-                     # evaluation.
-                     self[[i]] <- value
-                     if (i %in% recompile_keys)
-                       self$highest_parent$.needs_recompile <- TRUE
-
-                     # when setting the fixed attribute, make or remove a placeholder appropraitely
-                      if (i == 'fixed') {
-                        if (value)
-                          self$.tf_array <- tf$placeholder(dtype = float_type,
-                                                          shape = self$.array$shape,
-                                                          name = self$name)
-                        else
-                          self$.tf_array = NULL
-                      }
-                   },
-
+                   }#,
+                   # 
+                   #                    `$<-` = function (x, i, value) {
+                   #                      # When some attributes are set, we need to recompile the tf model before
+                   #                      # evaluation.
+                   #                      self[[i]] <- value
+                   #                      if (i %in% recompile_keys)
+                   #                        self$highest_parent$.needs_recompile <- TRUE
+                   # 
+                   #                      # when setting the fixed attribute, make or remove a placeholder appropraitely
+                   #                       if (i == 'fixed') {
+                   #                         if (value)
+                   #                           self$.tf_array <- tf$placeholder(dtype = float_type,
+                   #                                                           shape = self$.array$shape,
+                   #                                                           name = self$name)
+                   #                         else
+                   #                           self$.tf_array = NULL
+                   #                       }
+                   #                    },
+                   
                    # could overload str.R6 for this?
-
+                   
                    # def __str__(self, prepend=''):
                    #   return prepend + \
                    # '\033[1m' + self.name + '\033[0m' + \
@@ -252,28 +295,28 @@ Param <- R6Class('Param',
                    # ' prior:' + str(self.prior) + \
                    # (' [FIXED]' if self.fixed else '') + \
                    # '\n' + str(self.value)
-
-                   getstate = function (self) {
-                     d <- super$getstate()
-                     d$pop('_tf_array')
-                     d$pop('_log_jacobian')
-                     return (d)
-                   },
-
-                   setstate = function (self) {
-                     super$setstate(d)
-                     self$.log_jacobian <- NULL
-                     self$fixed <- self$fixed
-                   }
+                   
+                   # getstate = function (self) {
+                   #   d <- super$getstate()
+                   #   d$pop('_tf_array')
+                   #   d$pop('_log_jacobian')
+                   #   return (d)
+                   # },
+                   # 
+                   # setstate = function (self) {
+                   #   super$setstate(d)
+                   #   self$.log_jacobian <- NULL
+                   #   self$fixed <- self$fixed
+                   # }
                  ),
-
+                 
                  # point 'value' at the array
                  active = list(
                    value = property('.array'),
                    shape = function (value) dim(self$.array),
                    size = function (value) prod(self$shape)
                  )
-                 )
+)
 
 # DataHolder <- R6Class('DataHolder',
 #                          inherit = Parentable,
@@ -288,53 +331,53 @@ Param <- R6Class('Param',
 Parameterized <- R6Class('Parameterized',
                          inherit = Parentable,
                          public = list(
-
+                           
                            x = NULL,
                            .tf_mode = FALSE,
-
+                           
                            initialize = function () {
                              self$.tf_mode <- FALSE
                            },
-
+                           
                            tf_mode = function () {
                              on.exit(self$.end_tf_mode())
                              self$.begin_tf_mode()
                              return (self$clone())
                            },
-
+                           
                            .begin_tf_mode = function () {
                              self$.tf_mode <- TRUE
                            },
-
+                           
                            .end_tf_mode = function () {
                              self$.tf_mode <- FALSE
                            },
-
+                           
                            print = function (...) {
                              cat ('Parameterized object\n')
                            },
-
+                           
                            `$` = function (x, i) {
                              # return a tensorflow array if `x` is in tf_mode,
                              # and the object containing that array otherwise
                              o <- x[[i]]
-
+                             
                              if (has(x, '.tf_mode') && x[['.tf_mode']] && has(o, '.tf_array'))
                                o <- o[['.tf_array']]
-
+                             
                              o
                            }
-
+                           
                          ))
 
 
 ParamList <- R6Class('ParamList',
-                         inherit = Parameterized,
-                         public = list(
-
-                           print = function (...) {
-                             cat ('ParamList object\n')
-                           }
-
-                         ))
+                     inherit = Parameterized,
+                     public = list(
+                       
+                       print = function (...) {
+                         cat ('ParamList object\n')
+                       }
+                       
+                     ))
 

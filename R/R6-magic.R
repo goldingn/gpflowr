@@ -33,8 +33,8 @@ has <- function (x, name, which = c('element', 'attribute')) {
 
 `$<-.R6` <- function (x, i, value) {
   # dollar insertion
-  if (has(x, '$'))
-    return (x[['$']](x, i, value))
+  if (has(x, '$<-'))
+    return (x[['$<-']](x, i, value))
   else {
     x[[i]] <- value
     return (x)
@@ -129,4 +129,12 @@ property <- function (name, public = TRUE) {
   fun <- eval(parse(text = fun_text))
   fun
 
-  }
+}
+
+# use random hex strings to let Parentables find their names
+get_hex <- function (nchar = 64) {
+  # get a random hex string of n characters
+  char <- c(0:9, letters, LETTERS)
+  vec <- sample(char, nchar, replace = TRUE)
+  paste(vec, collapse = '')
+}
