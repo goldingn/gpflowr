@@ -9,4 +9,5 @@ The aim is to make this a pretty close translation of the python code, so it use
 
 R doesn't have an equivalent of [GPflow's readthedocs site](http://gpflow.readthedocs.io), so the package documentation is hosted [here](https://goldingn.github.io/GPflowR) (with a little help from [pkgdown](https://github.com/hadley/pkgdown))
 
+
 The package is currently only in the very early stages of development, so watch this space!
