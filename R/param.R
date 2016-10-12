@@ -63,7 +63,7 @@ Parentable <- R6Class('Parentable',
                         },
                         
                         print = function (...) {
-                          # find the classes ot which this object belongs and print them
+                          # find the classes to which this object belongs and print them
                           
                           classes <- class(self$clone())
                           

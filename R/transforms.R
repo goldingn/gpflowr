@@ -17,7 +17,13 @@ Transform <- R6Class('Transform',
                          not_implemented_error(),
                        
                        str = function (x, ...)
-                         not_implemented_error()
+                         not_implemented_error(),
+                       
+                       print = function (x, ...) {
+                         msg <- sprintf('%s transform\n',
+                                        class(self)[1])
+                         cat(msg)
+                       }
                        
                      ))
 
