@@ -19,11 +19,11 @@ Kern <- R6Class("Kern",
                     
                     super$initialize()
                     self$input_dim <- input_dim
-                    
+
                     if (is.null(active_dims)) {
                       self$active_dims <- input_dim
                     } else {
-                      self$active_dims <- tf.constant(self$active_dims, tf$int32)
+                      self$active_dims <- tf$constant(active_dims, tf$int32)
                     }
                     
                   },
@@ -83,7 +83,7 @@ Static <- R6Class('Static',
                                            variance = 1,
                                            active_dims = NULL) {
                       self <- super$initialize(input_dim, active_dims)
-                      self$variance <- Param$new(variance, positive)
+                      self$variance <- Param$new(variance, transforms$positive)
                     },
                     
                     Kdiag = function (X)
@@ -175,7 +175,7 @@ Stationary <- R6Class('Stationary',
                           # (ARD=TRUE) or a single lengthscale (ARD=False).
                           
                           super$initialize(input_dim, active_dims)
-                          self$variance <- Param$new(variance, positive)# constrain positive
+                          self$variance <- Param$new(variance, transforms$positive)# constrain positive
                           
                           if (ARD) {
                             
@@ -191,7 +191,7 @@ Stationary <- R6Class('Stationary',
                             
                           }
                           
-                          self$lengthscales <- Param$new(lengthscales, positive)
+                          self$lengthscales <- Param$new(lengthscales, transforms$positive)
                           self$ARD <- ARD
                           
                         },
@@ -270,7 +270,7 @@ Linear <- R6Class('Linear',
                    if (ARD)
                      variance <- rep(1, self$input_dim) * variance
                    
-                   self$variance <- Param$new(variance, positive)
+                   self$variance <- Param$new(variance, transforms$positive)
                    self$parameters <- list(self$variance)
                    
                  },
@@ -386,9 +386,9 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                       # No ARD support for lengthscale or period yet
                       super$initialize(input_dim, active_dims)
                       
-                      self$variance <- Param$new(variance, positive)
-                      self$lengthscales <- Param$new(lengthscales, positive)
-                      self$period <- Param$new(period, positive)
+                      self$variance <- Param$new(variance, transforms$positive)
+                      self$lengthscales <- Param$new(lengthscales, transforms$positive)
+                      self$period <- Param$new(period, transforms$positive)
                       
                       self$ARD <- FALSE
                       

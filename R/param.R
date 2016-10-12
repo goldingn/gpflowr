@@ -184,9 +184,10 @@ Param <- R6Class('Param',
                    .tf_array = NULL,
                    .log_jacobian = NULL,
                    prior = NULL,
+                   transform = NULL,
                    fixed = FALSE,
                    
-                   initialize = function (array, transform = Identity$new()) {
+                   initialize = function (array, transform = transforms$Identity()) {
                      self$value <- array
                      self$transform <- transform
                    },
