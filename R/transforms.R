@@ -171,21 +171,19 @@ Logistic <- R6Class('Logistic',
 #'   \emph{parameter state}
 #'   
 #' @section Usage: \preformatted{
-#' 
 #'  # transform objects
-#'  transforms$Identity()
-#'  transforms$Exp(lower = 1e-6)
-#'  transforms$Log1pe(lower = 1e-6)
-#'  transforms$Logistic(a = 0, b = 1)
-#'  transforms$positive(lower = 1e-6)
+#'  t <- transforms$Identity()
+#'  t <- transforms$Exp(lower = 1e-6)
+#'  t <- transforms$Log1pe(lower = 1e-6)
+#'  t <- transforms$Logistic(a = 0, b = 1)
+#'  t <- transforms$positive(lower = 1e-6)
 #'   
 #'  # transform object member functions
-#'  t <- transforms$Identity()
-#'  t$forward(-3)
-#'  t$backward(0.5)
-#'  t$tf_forward(-3)
-#'  t$tf_log_jacobian(-3)
-#'   }
+#'  t$forward(x)
+#'  t$backward(y)
+#'  t$tf_forward(x)
+#'  t$tf_log_jacobian(x)
+#'  }
 #'  
 #' @section Arguments:
 #' \describe{

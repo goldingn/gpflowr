@@ -445,33 +445,55 @@ PeriodicKernel <- R6Class('PeriodicKernel',
 #'   
 #' @title GPflow kernel objects
 #'   
-#' @description Kernels 
+#' @description Methods to construct, combine and evaluate kernels (covariance functions)
 #'   
 #' @section Usage: \preformatted{
-#' 
-#'  # kernel objects
-#'  kernels$Identity()
-#'  transforms$Exp(lower = 1e-6)
-#'  transforms$Log1pe(lower = 1e-6)
-#'  transforms$Logistic(a = 0, b = 1)
-#'  transforms$positive(lower = 1e-6)
+#'  # static kernel objects
+#'  k <- kernels$White(input_dim, variance = 1, active_dims = NULL)
+#'  k <- kernels$Constant(input_dim, variance = 1, active_dims = NULL)
+#'  k <- kernels$Bias(input_dim, variance = 1, active_dims = NULL)
+#'  
+#'  # stationary kernel objects
+#'  k <- kernels$RBF(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+#'  k <- kernels$Exponential(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+#'  k <- kernels$Matern12(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+#'  k <- kernels$Matern32(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+#'  k <- kernels$Matern52(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+#'  
+#'  # non-stationary kernel objects
+#'  k <- kernels$Linear(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+#'  
+#'  # periodic kernel objects
+#'  k <- kernels$Cosine(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+#'  k <- kernels$PeriodicKernel(input_dim, period = 1, variance = 1, lengthscales = NULL, active_dims = NULL)
 #'   
-#'  # transform object member functions
-#'  t <- transforms$Identity()
-#'  t$forward(-3)
-#'  t$backward(0.5)
-#'  t$tf_forward(-3)
-#'  t$tf_log_jacobian(-3)
-#'   }
+#'  # kernel operations
+#'  k + k
+#'  k * k
+#'  
+#'  # kernel object member functions
+#'  k$K(X, X2 = NULL)
+#'  k$Kdiag(X)
+#'  k$compute_K(X, Z)
+#'  k$compute_K_symm(X)
+#'  #k$compute_Kdiag(X)
+#' }
 #'  
 #' @section Arguments:
 #' \describe{
-#' \item{lower}{The minimum value that positive transforms can take. This helps
-#' stability during optimization, because aggressive optimizers can take
-#' overly-long steps which lead to zero in the transformed variable, causing an
-#' error.}
-#' \item{a, b}{The location (\code{a}) and scale (\code{b}) of the logistic 
-#' distribution used in the logistic transform.}
+
+#' \item{input_dim}{An integer vector giving the dimensions of the matrix 
+#' \code{X} on which member functions will operate.} \item{active_dims}{An
+#' integer vector identifying the columns of \code{X} on which this kernel
+#' operates. If \code{NULL} (default), all columns are active} \item{variance}{A
+#' positive numeric scalar giving the initial value of the marginal variance of
+#' the kernel.} \item{lengthscales}{A positive numeric vector giving the initial
+#' value of kernel lengthscales for the columns indexed by \code{active_dims}.} 
+#' \item{period}{A positive numeric vector giving the initial value of the 
+#' periodicity for the columns indexed by \code{active_dims}.} 
+#' \item{ARD}{Whether allow lengthscales and periodicities to vary between
+#' active dimensions. If \code{FALSE}, \code{lengthscales} and \code{period}
+#' should be scalar.}
 #' }
 NULL
 
