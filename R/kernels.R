@@ -4,7 +4,7 @@
 # generic '_slice' function to implement them.
 Kern <- R6Class("Kern",
                 
-                inherit = Parameterised,
+                inherit = Parameterized,
                 
                 public = list(
                   
