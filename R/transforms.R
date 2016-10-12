@@ -114,7 +114,6 @@ Logistic <- R6Class('Logistic',
                       .b = NULL,
                       
                       initialize = function (a = 0, b = 1) {
-                        super$initialize()
                         stopifnot(b > a)
                         self$a <- a
                         self$b <- b
