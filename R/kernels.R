@@ -482,6 +482,38 @@ make_kernel_names <- function (kern_list) {
   
 }
 
+Combination <- R6Class('Combination',
+                       inherit = Kern,
+                       public = list(
+                         
+                         kern_list = NULL,
+                         
+                         initialize = function (kern_list) {
+                           
+                           is_kernel <- vapply(kern_list, inherits, TRUE, 'Kern')
+                           if (!all(is_kernel))
+                             stop ('can only combine kernels')
+                           
+                           # initialize at maximum dimension
+                           dims <- vapply(kern_list, function (x) x$input_dim, 1)
+                           super$initialize(input_dim = max(dims))
+                           
+                           self$kern_list <- list()
+                           
+                           for (k in kern_list) {
+                             if (inherits(k, class(self)[1]))
+                               self$kern_list <- c(self$kern_list, k$kern_list)
+                             else
+                               self$kern_list <- c(self$kern_list, k)
+                           }
+                           
+                           # add names to list
+                           names <- make_kernel_names(self$kern_list)
+                           names(self$kern_list) <- names
+                           
+                         }
+                       ))
+
 
 #' @name kernels
 #'   
