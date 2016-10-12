@@ -45,6 +45,8 @@ Parentable <- R6Class('Parentable',
                           # either way, assign the value
                           self[[i]] <- value
                           
+                          self
+                          
                         },
                         
                         # get the index to a child
