@@ -440,6 +440,48 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                     
                   ))
 
+make_kernel_names <- function (kern_list) {
+  # Take a list of kernels and return a list of strings, giving each kernel a
+  # unique name.
+  # Each name is made from the lower-case version of the kernel's class name.
+  # Duplicate kernels are given training numbers.
+  n <- length(kern_list)
+  names <- rep(NA, n) 
+  counting <- list()
+  
+  for (k in seq_len(n)) {
+    
+    kernel <- kern_list[[k]]
+    raw_name <- tolower(class(kernel)[1])
+    
+    # check for duplicates: start numbering if needed
+    if (raw_name %in% names(counting)) {
+      
+      # if there's already been one, go back and make the first one x_1
+      if (counting[[raw_name]] == 1) {
+        which_first <- match(raw_name, names)
+        names[which_first] <- paste0(raw_name, '_1')
+      }
+      
+      # add one ot the counter and create the name
+      counting[[raw_name]] <- counting[[raw_name]] + 1
+      name = sprintf('%s_%s',
+                     raw_name,
+                     counting[[raw_name]])
+      
+      } else {
+        counting[[raw_name]] <- 1
+        name <- raw_name
+      }
+    
+      names[k] <- name
+    
+  }
+  
+  names
+  
+}
+
 
 #' @name kernels
 #'   
