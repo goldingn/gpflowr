@@ -88,8 +88,11 @@ Static <- R6Class('Static',
                     initialize = function (input_dim,
                                            variance = 1,
                                            active_dims = NULL) {
-                      self <- super$initialize(input_dim, active_dims)
+                      
+                      super$initialize(input_dim, active_dims)
                       self$variance <- Param$new(variance, transforms$positive)
+                      
+                      
                     },
                     
                     Kdiag = function (X)
