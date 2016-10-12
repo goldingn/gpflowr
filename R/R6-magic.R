@@ -49,7 +49,7 @@ str.R6 <- function (object, ...) {
   if (has(object, 'str'))
     return (object[['str']](object, ...))
   else
-    print.R6ClassGenerator(object, ...)
+    print(object, ...)
 }
 
 # +/*, so R6 classes can define their own

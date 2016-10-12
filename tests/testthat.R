@@ -1,2 +1,2 @@
 library(testthat)
-test_check("GPflowR")
+test_check("gpflowr")
