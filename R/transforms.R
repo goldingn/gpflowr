@@ -193,9 +193,8 @@ Logistic <- R6Class('Logistic',
 NULL
 
 #' @export
-transforms <- module(Identity = Identity$new,
-                     Exp = Exp$new,
-                     Log1pe = Log1pe$new,
-                     Logistic = Logistic$new,
-                     positive = Log1pe$new)
-
+transforms <- module(Identity,
+                     Exp,
+                     Log1pe,
+                     Logistic,
+                     positive = Log1pe)

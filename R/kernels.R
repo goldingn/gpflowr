@@ -415,3 +415,52 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                     }
                     
                   ))
+
+
+#' @name kernels
+#'   
+#' @title GPflow kernel objects
+#'   
+#' @description Kernels 
+#'   
+#' @section Usage: \preformatted{
+#' 
+#'  # kernel objects
+#'  kernels$Identity()
+#'  transforms$Exp(lower = 1e-6)
+#'  transforms$Log1pe(lower = 1e-6)
+#'  transforms$Logistic(a = 0, b = 1)
+#'  transforms$positive(lower = 1e-6)
+#'   
+#'  # transform object member functions
+#'  t <- transforms$Identity()
+#'  t$forward(-3)
+#'  t$backward(0.5)
+#'  t$tf_forward(-3)
+#'  t$tf_log_jacobian(-3)
+#'   }
+#'  
+#' @section Arguments:
+#' \describe{
+#' \item{lower}{The minimum value that positive transforms can take. This helps
+#' stability during optimization, because aggressive optimizers can take
+#' overly-long steps which lead to zero in the transformed variable, causing an
+#' error.}
+#' \item{a, b}{The location (\code{a}) and scale (\code{b}) of the logistic 
+#' distribution used in the logistic transform.}
+#' }
+NULL
+
+# 
+# #' @export
+# kernels <- module(White = White$new,
+#                   Constant = Constant$new,
+#                   Bias = Constant$new,
+#                   RBF = RBF$new,
+#                   Linear = Linear$new,
+#                   Exponential = Exponential$new,
+#                   Matern12 = Matern12$new,
+#                   Matern32 = Matern32$new,
+#                   Matern52 = Matern52$new,
+#                   Cosine = Cosine$new,
+#                   PeriodicKernel = PeriodicKernel$new)
