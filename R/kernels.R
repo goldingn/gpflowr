@@ -65,11 +65,17 @@ Kern <- R6Class("Kern",
                   
                   # add autoflow
                   compute_K_symm = function (X)
-                    self$K(X)
+                    self$K(X),
+                  
+                  print = function(x, ...) {
+                    msg <- sprintf('%s kernel\n',
+                                   class(self)[1])
+                    cat(msg)
+                  }
                   
                 ))
 
-# Kernels who don't depend on the value of the inputs are 'Static'.  The only
+# Kernels who don't depend on the value of the inputs are 'Static'. The only 
 # parameter is a variance.
 Static <- R6Class('Static',
                   
