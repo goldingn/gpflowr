@@ -69,6 +69,7 @@ str.R6 <- function (object, ...) {
     .Primitive('*')(e1, e2)
 }
 
+#' @export
 with.R6 <- function (data, expr, as = NULL, ...) {
   # define a simple `with` syntax for R6 objects to safely execute modified
   # code, then clean up. This leans heavily on the `with` generic in the
