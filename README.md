@@ -1,6 +1,6 @@
 # gpflowr 
 
-[![Build Status](https://travis-ci.org/goldingn/gpflowr.svg)](https://travis-ci.org/goldingn/gpflowr)
+[![Build Status](https://travis-ci.org/goldingn/gpflowr.svg?branch=master)](https://travis-ci.org/goldingn/gpflowr)
 [![codecov.io](https://codecov.io/github/goldingn/gpflowr/coverage.svg?branch=master)](https://codecov.io/github/goldingn/gpflowr?branch=master)
 [![cran version](http://www.r-pkg.org/badges/version/gpflowr)](https://cran.rstudio.com/web/packages/gpflowr)
 
