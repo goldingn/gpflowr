@@ -148,5 +148,55 @@ Logistic <- R6Class('Logistic',
                       
                     ))
 
+# define a module, containing all of the constructors and documenting the module
+# following documentation approach here:
+# https://github.com/MangoTheCat/processx/blob/bc7483237b0fbe723390cbb74951221968fdb963/R/process.R#L2
 
-positive <- Log1pe
+#' @name transforms
+#'   
+#' @title parameter transformation objects
+#'   
+#' @description transformation objects used internally in GPflowR
+#'   
+#' @details This module will likely be unexported and not formally documented in
+#'   the near future. This is essentially a test run of the module documentation
+#'   set up
+#'   
+#' @method forward transfrom from the unconstrained \emph{free state} to the
+#'   \emph{parameter state}
+#'   
+#' @section Usage: \preformatted{
+#' 
+#'  # transform objects
+#'  transforms$Identity()
+#'  transforms$Exp(lower = 1e-6)
+#'  transforms$Log1pe(lower = 1e-6)
+#'  transforms$Logistic(a = 0, b = 1)
+#'  transforms$positive(lower = 1e-6)
+#'   
+#'  # transform object member functions
+#'  t <- transforms$Identity()
+#'  t$forward(-3)
+#'  t$backward(0.5)
+#'  t$tf_forward(-3)
+#'  t$tf_log_jacobian(-3)
+#'   }
+#'  
+#' @section Arguments:
+#' \describe{
+#' \item{lower}{The minimum value that positive transforms can take. This helps
+#' stability during optimization, because aggressive optimizers can take
+#' overly-long steps which lead to zero in the transformed variable, causing an
+#' error.}
+#' \item{a, b}{The location (\code{a}) and scale (\code{b}) of the logistic 
+#' distribution used in the logistic transform.}
+#' }
+NULL
+
+#' @export
+transforms <- module(Identity = Identity$new,
+                     Exp = Exp$new,
+                     Log1pe = Log1pe$new,
+                     Logistic = Logistic$new,
+                     positive = Log1pe$new)
+
