@@ -23,6 +23,7 @@ has <- function (x, name, which = c('element', 'attribute')) {
 # methods as member functions. If they don't provide one, default to standard
 # subsetting/insertion
 
+#' @export
 `$.R6` <- function (x, i) {
   # dollar extraction
   if (has(x, '$'))
@@ -31,6 +32,7 @@ has <- function (x, name, which = c('element', 'attribute')) {
     return (x[[i]])
 }
 
+#' @export
 `$<-.R6` <- function (x, i, value) {
   # dollar insertion
   if (has(x, '$<-'))
@@ -42,13 +44,29 @@ has <- function (x, name, which = c('element', 'attribute')) {
 }
 
 # overload str, so R6 classes can define their own
-# this needs to be registered properly (or loaded into the global environment) to work!
+#' @export
 str.R6 <- function (object, ...) {
-  # dollar insertion
   if (has(object, 'str'))
     return (object[['str']](object, ...))
   else
     print.R6ClassGenerator(object, ...)
+}
+
+# +/*, so R6 classes can define their own
+#' @export
+`+.R6` <- function (e1, e2) {
+  if (has(e1, '+'))
+    return (e1[['+']](e1, e2))
+  else
+    .Primitive('+')(e1, e2)
+}
+
+#' @export
+`*.R6` <- function (e1, e2) {
+  if (has(e1, '*'))
+    return (e1[['*']](e1, e2))
+  else
+    .Primitive('*')(e1, e2)
 }
 
 with.R6 <- function (data, expr, as = NULL, ...) {
