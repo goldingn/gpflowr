@@ -54,10 +54,10 @@ Kern <- R6Class("Kern",
                   
                   # kernel composition
                   `+` = function (self, other)
-                    Add(self, other),
+                    Add$new(list(self, other)),
 
                   `*` = function (self, other)
-                    Prod(self, other),
+                    Prod$new(list(self, other)),
                     
                   # add autoflow
                   compute_K = function (X, Z)
@@ -514,6 +514,58 @@ Combination <- R6Class('Combination',
                          }
                        ))
 
+# additive kernel
+Add <- R6Class('Add',
+               inherit = Combination,
+               public = list(
+                 
+                 K = function (X, X2 = NULL) {
+                   
+                   ans <- self$kern_list[[1]]$K(X, X2)
+                   
+                   for (k in self$kern_list[[-1]])
+                     ans <- tf$add(ans, k$K(X, X2))
+                   
+                   ans
+                 },
+                 
+                 Kdiag = function (X) {
+                   
+                   ans <- self$kern_list[[1]]$Kdiag(X, X2)
+                   
+                   for (k in self$kern_list[[-1]])
+                     ans <- tf$add(ans, k$Kdiag(X, X2))
+                   
+                   ans
+                 }
+                 
+               ))
+
+Prod <- R6Class('Prod',
+               inherit = Combination,
+               public = list(
+                 
+                 K = function (X, X2 = NULL) {
+                   
+                   ans <- self$kern_list[[1]]$K(X, X2)
+                   
+                   for (k in self$kern_list[[-1]])
+                     ans <- tf$mul(ans, k$K(X, X2))
+                   
+                   ans
+                 },
+                 
+                 Kdiag = function (X) {
+                   
+                   ans <- self$kern_list[[1]]$Kdiag(X, X2)
+                   
+                   for (k in self$kern_list[[-1]])
+                     ans <- tf$mul(ans, k$Kdiag(X, X2))
+                   
+                   ans
+                 }
+                 
+               ))
 
 #' @name kernels
 #'   
