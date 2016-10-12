@@ -5,17 +5,32 @@ Version: 0.1.0
 Authors@R: c(
 	person("Nick", "Golding", role = c("aut", "cre"), email = "nick.golding.research@gmail.com")
 	)
-Description: A port of the GPflow python package to R. GPflowR implements Gaussian process models using Google's TensorFlow library (via the tensorflow R package). This enables automatic gradient construction via symbolic differentiation, efficient linear algebra, and portability to CPUs, GPUs, and across platforms. Like tensorflow, this package requires installation of python and TensorFlow.
+Description: A port of the GPflow python package to R. GPflowR implements
+    Gaussian process models using Google's TensorFlow library (via the tensorflow
+    R package). This enables automatic gradient construction via symbolic
+    differentiation, efficient linear algebra, and portability to CPUs, GPUs, and
+    across platforms. Like tensorflow, this package requires installation of python
+    and TensorFlow.
 License: Apache License 2.0
 Encoding: UTF-8
 LazyData: true
 URL: https://github.com/goldingn/GPflowR
 BugReports: https://github.com/goldingn/GPflowR/issues
 SystemRequirements: Python (>= 2.7.0) with header files and shared library;
-  TensorFlow (https://www.tensorflow.org/)
-Depends: R (>= 3.0)
+    TensorFlow (https://www.tensorflow.org/)
+Depends:
+    R (>= 3.0)
 RoxygenNote: 5.0.1
 Imports:
-  R6,
-  tensorflow
-Suggests: testthat
+    R6,
+    tensorflow
+Suggests:
+    testthat
+Collate:
+    'R6-magic.R'
+    'decorator-class.R'
+    'gpflowr-package.R'
+    'param.R'
+    'module-class.R'
+    'kernels.R'
+    'transforms.R'

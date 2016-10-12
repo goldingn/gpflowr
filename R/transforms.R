@@ -199,6 +199,7 @@ Logistic <- R6Class('Logistic',
 NULL
 
 #' @export
+#' @include module-class.R R6-magic.R
 transforms <- module(Identity,
                      Exp,
                      Log1pe,

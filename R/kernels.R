@@ -460,16 +460,16 @@ PeriodicKernel <- R6Class('PeriodicKernel',
 #' }
 NULL
 
-# 
-# #' @export
-# kernels <- module(White = White$new,
-#                   Constant = Constant$new,
-#                   Bias = Constant$new,
-#                   RBF = RBF$new,
-#                   Linear = Linear$new,
-#                   Exponential = Exponential$new,
-#                   Matern12 = Matern12$new,
-#                   Matern32 = Matern32$new,
-#                   Matern52 = Matern52$new,
-#                   Cosine = Cosine$new,
-#                   PeriodicKernel = PeriodicKernel$new)
+#' @export
+#' @include module-class.R param.R decorator-class.R R6-magic.R
+kernels <- module(White,
+                  Constant,
+                  Bias = Constant,
+                  RBF,
+                  Linear,
+                  Exponential,
+                  Matern12,
+                  Matern32,
+                  Matern52,
+                  Cosine,
+                  PeriodicKernel)

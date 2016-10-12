@@ -2,6 +2,7 @@
 
 # construct a module from a list of arguments. Uses some magic to avoid having
 # to name all the arguments or specifying the $new method
+
 module <- function (...) {
   
   # construct the list, autofill the names
