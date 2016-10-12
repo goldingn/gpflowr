@@ -261,6 +261,14 @@ Linear <- R6Class('Linear',
                
                public = list(
                  
+                 variance = NULL,
+                 
+                 lengthscales = NULL,
+                 
+                 ARD = NULL,
+                 
+                 parameters = NULL,
+                 
                  initialize = function (input_dim,
                                         variance = 1,
                                         lengthscales = NULL,
@@ -375,7 +383,6 @@ Cosine <- R6Class('Cosine',
                       
                     ))
 
-# The Cosine kernel
 PeriodicKernel <- R6Class('PeriodicKernel',
                   # The periodic kernel. Defined in  Equation (47) of
                   # D.J.C.MacKay. Introduction to Gaussian processes. In C.M.Bishop, editor,
@@ -386,10 +393,18 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                   
                   public = list(
                     
+                    period = NULL,
+                    
+                    variance = NULL,
+                    
+                    lengthscales = NULL,
+                    
+                    ARD = NULL,
+                    
                     initialize = function (input_dim,
                                            period = 1,
                                            variance = 1,
-                                           lengthcales =1,
+                                           lengthscales = 1,
                                            active_dims = NULL) {
                       
                       # No ARD support for lengthscale or period yet
