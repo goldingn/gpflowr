@@ -44,46 +44,23 @@ Kern <- R6Class("Kern",
                   
                   .slice = function (X, X2) {
                     
-                    if (inherits(self$active_dims, 'numeric')) {
-                      
-                      X <- X[, self$active_dims + 1, drop = FALSE]
-                      
-                      if (!is.null(X2))
-                        X2 <- X2[, self$active_dims + 1, drop = FALSE]
-                      
-                    } else {
-                      
-                      X <- tf$transpose(tf$gather(tf$transpose(X),
-                                                  self$active_dims))
-                      
-                      if (! is.null(X2))
-                        X2 <- tf$transpose(tf$gather(tf$transpose(X2),
-                                                     self$active_dims))
-                      
-                    }                         
+
+                    # if X isn't a tensorflow object, index from 1
+                    dims <- self$active_dims
                     
+                    if (!inherits(X, 'tensorflow.builtin.object'))
+                      dims <- dims + 1 
+                    
+                    
+                    X <- X[, dims, drop = FALSE]
+                      
+                    if (!is.null(X2))
+                      X2 <- X2[, self$active_dims, drop = FALSE]
+                      
                     list(X = X, X2 = X2)
                     
                   },
-                  
-                  div_lengthscales = function (x) {
-                    # divide a 2d array x by this object's lengthscales argument and return
-                    # this annoying hack is necessary because R's matrix/vector division operates
-                    # columnwise rather than rowwise
-                    if (!is.null(self$lengthscales)) {
-                      if (inherits(x, 'tensorflow.builtin.object')) {
-                        dim <- x$get_shape()$as_list()
-                        cols <- seq_len(dim[2])
-                        cols <- cols - 1
-                      } else {
-                        cols <- seq_len(dim(x)[2])
-                      }
-                      for (i in cols)
-                        x[, i] <- x[, i] / self$lengthscales[i]
-                    }
-                    x
-                  },
-                  
+
                   # kernel composition
                   `+` = function (self, other)
                     Add$new(list(self, other)),
@@ -239,7 +216,7 @@ Stationary <- R6Class('Stationary',
                         
                         square_dist = function (X, X2) {
                           
-                          X <- self$div_lengthscales(X)
+                          X <- tf$truediv(X, self$lengthscales)
                           Xs <- tf$reduce_sum(tf$square(X), 1L)
                           
                           if (is.null(X2)) {
@@ -250,7 +227,7 @@ Stationary <- R6Class('Stationary',
                             
                           } else {
                             
-                            X2 <- self$div_lengthscales(X2)
+                            X2 <- tf$truediv(X2, self$lengthscales)
                             X2s <- tf$reduce_sum(tf$square(X2), 1L)
                             
                             return (to(-2) * tf$matmul(X, tf$transpose(X2)) +
