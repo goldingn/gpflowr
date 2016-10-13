@@ -188,7 +188,7 @@ Param <- R6Class('Param',
                    fixed = FALSE,
                    
                    initialize = function (array, transform = transforms$Identity()) {
-                     self$value <- array
+                     self$value <- as.array(array)
                      self$transform <- transform
                    },
                    
