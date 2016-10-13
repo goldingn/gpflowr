@@ -46,10 +46,10 @@ Kern <- R6Class("Kern",
                     
                     if (inherits(self$active_dims, 'numeric')) {
                       
-                      X <- X[, self$active_dims]
+                      X <- X[, self$active_dims + 1, drop = FALSE]
                       
                       if (!is.null(X2))
-                        X2 <- X2[, self$active_dims]
+                        X2 <- X2[, self$active_dims + 1, drop = FALSE]
                       
                     } else {
                       
@@ -62,8 +62,26 @@ Kern <- R6Class("Kern",
                       
                     }                         
                     
-                    list(X, X2)
+                    list(X = X, X2 = X2)
                     
+                  },
+                  
+                  div_lengthscales = function (x) {
+                    # divide a 2d array x by this object's lengthscales argument and return
+                    # this annoying hack is necessary because R's matrix/vector division operates
+                    # columnwise rather than rowwise
+                    if (!is.null(self$lengthscales)) {
+                      if (inherits(x, 'tensorflow.builtin.object')) {
+                        dim <- x$get_shape()$as_list()
+                        cols <- seq_len(dim[2])
+                        cols <- cols - 1
+                      } else {
+                        cols <- seq_len(dim(x)[2])
+                      }
+                      for (i in cols)
+                        x[, i] <- x[, i] / self$lengthscales[i]
+                    }
+                    x
                   },
                   
                   # kernel composition
@@ -221,22 +239,21 @@ Stationary <- R6Class('Stationary',
                         
                         square_dist = function (X, X2) {
                           
-                          X <- X / self$lengthscales # operates columnwise!
-                          
+                          X <- self$div_lengthscales(X)
                           Xs <- tf$reduce_sum(tf$square(X), 1L)
                           
                           if (is.null(X2)) {
                             
-                            return (-2.0 * tf$matmul(X, tf$transpose(X)) +
+                            return (to(-2) * tf$matmul(X, tf$transpose(X)) +
                                       tf$reshape(Xs, c(-1L, 1L)) +
                                       tf$reshape(Xs, c(1L, -1L)))
                             
                           } else {
                             
-                            X2 <- X2 / self$lengthscales
+                            X2 <- self$div_lengthscales(X2)
                             X2s <- tf$reduce_sum(tf$square(X2), 1L)
                             
-                            return (-2 * tf$matmul(X, tf$transpose(X2)) +
+                            return (to(-2) * tf$matmul(X, tf$transpose(X2)) +
                                       tf$reshape(Xs, c(-1L, 1L)) +
                                       tf$reshape(X2s, c(1L, -1L)))
                             
@@ -245,7 +262,7 @@ Stationary <- R6Class('Stationary',
                         
                         euclid_dist = function (X, X2) {
                           r2 <- self$square_dist(X, X2)
-                          tf$sqrt(r2 + 1e-12)
+                          tf$sqrt(r2 + to(1e-12))
                         },
                         
                         Kdiag = function (X)
@@ -267,7 +284,7 @@ RBF <- R6Class('RBF',
                  
                  K = function (X, X2 = NULL) {
                    lis <- self$.slice(X, X2)
-                   tf$mul(self$variance, tf$exp(-self$square_dist(lis$X, lis$X2) / 2))
+                   tf$mul(self$variance, tf$exp(-self$square_dist(lis$X, lis$X2) / to(2)))
                  }
                  
                ))
@@ -334,7 +351,7 @@ Exponential <- R6Class('Exponential',
                          K = function (X, X2 = NULL) {
                            lis <- self$.slice(X, X2)
                            r <- self$euclid_dist(lis$X, lis$X2)
-                           self$variance * tf$exp(-0.5 * r)
+                           self$variance * tf$exp(to(-0.5) * r)
                          }
                          
                        ))
@@ -364,7 +381,7 @@ Matern32 <- R6Class('Matern32',
                       K = function (X, X2 = NULL) {
                         lis <- self$.slice(X, X2)
                         r <- self$euclid_dist(lis$X, lis$X2)
-                        self$variance * (1 + sqrt(3) * r) * tf$exp(-sqrt(3) * r)
+                        self$variance * (to(1 + sqrt(3)) * r) * tf$exp(to(-sqrt(3)) * r)
                       }
                       
                     ))
@@ -379,9 +396,9 @@ Matern52 <- R6Class('Matern52',
                       K = function (X, X2 = NULL) {
                         lis <- self$.slice(X, X2)
                         r <- self$euclid_dist(lis$X, lis$X2)
-                        self$variance * (1 + sqrt(5) * r * 5 / 3 *
+                        self$variance * (t(1 + sqrt(5)) * r * to(5 / 3) *
                                            tf$square(r)) *
-                          tf$exp(-sqrt(5) * r)
+                          tf$exp(to(-sqrt(5)) * r)
                       }
                       
                     ))
@@ -446,13 +463,13 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                         lis$X2<- lis$X
                       
                       # Introduce dummy dimension so we can use broadcasting
-                      f <- tf$expand_dims(lis$X, 1)  # now N x 1 x D
-                      f2 <- tf$expand_dims(lis$X2, 0)  # now 1 x M x D
+                      f <- tf$expand_dims(lis$X, 1L)  # now N x 1 x D
+                      f2 <- tf$expand_dims(lis$X2, 0L)  # now 1 x M x D
                       
                       r <- pi * (f - f2) / self$period
                       r = tf$reduce_sum(tf$square(tf$sin(r) / self$lengthscales), 2)
                       
-                      self$variance * tf$exp(-0.5 * r)
+                      self$variance * tf$exp(to(-0.5) * r)
                       
                     }
                     

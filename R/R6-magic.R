@@ -200,3 +200,19 @@ get_hex <- function (nchar = 64) {
 # placeholder error function
 not_implemented_error <- function ()
   stop ('method not implemented')
+
+# quickly cast constants from R's floats to Python's float64
+to <- function (constant, dtype = tf$float64)
+  tf$constant(constant, dtype)
+
+# do elementwise multiplication over a list of tensors
+tf_mul_n <- function (list) {
+  
+  ans <- list[[1]]
+  
+  for (i in 2:length(list))
+    ans <- tf$mul(ans, list[[i]])  
+  
+  ans
+  
+}
