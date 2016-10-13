@@ -18,19 +18,33 @@ Kern <- R6Class("Kern",
                     # active dims is a (slice | iterable of integers | None)
                     
                     super$initialize()
+                    
+                    if ( !(is.numeric(input_dim) &
+                           length(input_dim) == 1) )
+                      stop ('input_dim must be a numeric scalar (the number of dimensions the kernel acts on)')
+                    
                     self$input_dim <- input_dim
 
                     if (is.null(active_dims)) {
-                      self$active_dims <- input_dim
+                      
+                      # by default, count input_dim from 0
+                      self$active_dims <- seq_len(input_dim) - 1
+                      
                     } else {
-                      self$active_dims <- tf$constant(active_dims, tf$int32)
+                      
+                      if ( !(is.numeric(active_dim) &
+                             is.vector(active_dim) &&
+                             length(active_dims) == input_dim) )
+                        stop ('active_dims must be a numeric vector with length input_dim')
+                      
+                      self$active_dims <- tf$constant(array(active_dims), tf$int32)
                     }
                     
                   },
                   
                   .slice = function (X, X2) {
                     
-                    if (inherits(self$active_dims, 'integer')) {
+                    if (inherits(self$active_dims, 'numeric')) {
                       
                       X <- X[, self$active_dims]
                       
