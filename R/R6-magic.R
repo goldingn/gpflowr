@@ -144,20 +144,49 @@ with.R6 <- function (data, expr, as = NULL, ...) {
 
 # functor to return a default active function
 property <- function (name, public = TRUE) {
-
+  
   obj <- paste(ifelse(public,
                       'self',
                       'private'),
                name,
                sep = '$')
-
+  
   fun_text <- sprintf('fun <- function (value) {
                       if (missing(value)) { return (%s) }
                       else {%s <- value}}', obj, obj)
-
+  
   fun <- eval(parse(text = fun_text))
   fun
+  
+}
 
+# functor to return a default active function for kernel parameters
+# the name of the object this function is assigned to *must* point to a Param
+kernel_parameter <- function (name, public = TRUE) {
+  
+  obj <- paste(ifelse(public,
+                      'self',
+                      'private'),
+               name,
+               sep = '$')
+  
+  val <- paste0(obj, '$value')
+  
+  fun_text <- sprintf("
+    fun <- function (value) {
+      if (missing(value)) {
+        return (%s)
+      } else {
+        if (!inherits(value, 'Param')){
+          stop ('parameters must be Param objects')
+        }
+        %s <- value
+      }
+    }", val, obj)
+  
+  fun <- eval(parse(text = fun_text))
+  fun
+  
 }
 
 # use random hex strings to let Parentables find their names
@@ -171,3 +200,19 @@ get_hex <- function (nchar = 64) {
 # placeholder error function
 not_implemented_error <- function ()
   stop ('method not implemented')
+
+# quickly cast constants from R's floats to Python's float64
+to <- function (constant, dtype = tf$float64)
+  tf$constant(constant, dtype)
+
+# do elementwise multiplication over a list of tensors
+tf_mul_n <- function (list) {
+  
+  ans <- list[[1]]
+  
+  for (i in 2:length(list))
+    ans <- tf$mul(ans, list[[i]])  
+  
+  ans
+  
+}

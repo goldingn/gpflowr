@@ -18,40 +18,43 @@ Kern <- R6Class("Kern",
                     # active dims is a (slice | iterable of integers | None)
                     
                     super$initialize()
+                    
+                    if ( !(is.numeric(input_dim) &
+                           length(input_dim) == 1) )
+                      stop ('input_dim must be a numeric scalar (the number of dimensions the kernel acts on)')
+                    
                     self$input_dim <- input_dim
 
                     if (is.null(active_dims)) {
-                      self$active_dims <- input_dim
+                      
+                      # by default, count input_dim from 0
+                      self$active_dims <- seq_len(input_dim) - 1
+                      
                     } else {
-                      self$active_dims <- tf$constant(active_dims, tf$int32)
+                      
+                      if ( !(is.numeric(active_dim) &
+                             is.vector(active_dim) &&
+                             length(active_dims) == input_dim) )
+                        stop ('active_dims must be a numeric vector with length input_dim')
+                      
+                      self$active_dims <- tf$constant(array(active_dims), tf$int32)
                     }
                     
                   },
                   
-                  .slice = function (X, X2) {
+                  .slice = function (x) {
+                    # get the required columns of x
                     
-                    if (inherits(self$active_dims, 'integer')) {
-                      
-                      X <- X[, self$active_dims]
-                      
-                      if (!is.null(X2))
-                        X2 <- X2[, self$active_dims]
-                      
-                    } else {
-                      
-                      X <- tf$transpose(tf$gather(tf$transpose(X),
-                                                  self$active_dims))
-                      
-                      if (! is.null(X2))
-                        X2 <- tf$transpose(tf$gather(tf$transpose(X2),
-                                                     self$active_dims))
-                      
-                    }                         
+                    # if X isn't a tensorflow object, index from 1
+                    dims <- self$active_dims
                     
-                    list(X, X2)
+                    if (!inherits(x, 'tensorflow.builtin.object'))
+                      dims <- dims + 1 
+                    
+                    x[, dims, drop = FALSE]
                     
                   },
-                  
+
                   # kernel composition
                   `+` = function (self, other)
                     Add$new(list(self, other)),
@@ -83,7 +86,7 @@ Static <- R6Class('Static',
                   
                   public = list(
                     
-                    variance = NULL,
+                    .variance = NULL,
                     
                     initialize = function (input_dim,
                                            variance = 1,
@@ -99,6 +102,9 @@ Static <- R6Class('Static',
                       tf$fill(tf$pack(list(tf$shape(X)[0])),
                               tf$squeeze(self$variance))
                     
+                  ),
+                  active = list(
+                    variance = kernel_parameter(".variance")
                   ))
 
 # The White kernel
@@ -138,16 +144,13 @@ Constant <- R6Class('Constant',
                       K = function (X, X2 = NULL) {
                         
                         if (is.null(X2))
-                          shape <- tf$pack(list(tf$shape(X)[1], tf$shape(X)[0]))
+                          shape <- tf$pack(list(tf$shape(X)[0], tf$shape(X)[0]))
                         else
-                          shape <- tf$pack(list(tf$shape(X)[1], tf$shape(X2)[0]))
+                          shape <- tf$pack(list(tf$shape(X)[0], tf$shape(X2)[0]))
                         
                         tf$fill(shape, tf$squeeze(self$variance))
                       }
                     ))
-
-# Another name for the Constant kernel, included for convenience.
-Bias <- Constant
 
 # Base class for kernels that are stationary, that is, they only depend on
 # 
@@ -162,9 +165,9 @@ Stationary <- R6Class('Stationary',
                       
                       public = list(
                         
-                        variance = NULL,
+                        .variance = NULL,
                         
-                        lengthscales = NULL,
+                        .lengthscales = NULL,
                         
                         ARD = NULL,
                         
@@ -207,22 +210,21 @@ Stationary <- R6Class('Stationary',
                         
                         square_dist = function (X, X2) {
                           
-                          X <- X / self$lengthscales # operates columnwise!
-                          
+                          X <- tf$truediv(X, self$lengthscales)
                           Xs <- tf$reduce_sum(tf$square(X), 1L)
                           
                           if (is.null(X2)) {
                             
-                            return (-2.0 * tf$matmul(X, tf$transpose(X)) +
+                            return (to(-2) * tf$matmul(X, tf$transpose(X)) +
                                       tf$reshape(Xs, c(-1L, 1L)) +
                                       tf$reshape(Xs, c(1L, -1L)))
                             
                           } else {
                             
-                            X2 <- X2 / self$lengthscales
+                            X2 <- tf$truediv(X2, self$lengthscales)
                             X2s <- tf$reduce_sum(tf$square(X2), 1L)
                             
-                            return (-2 * tf$matmul(X, tf$transpose(X2)) +
+                            return (to(-2) * tf$matmul(X, tf$transpose(X2)) +
                                       tf$reshape(Xs, c(-1L, 1L)) +
                                       tf$reshape(X2s, c(1L, -1L)))
                             
@@ -231,13 +233,17 @@ Stationary <- R6Class('Stationary',
                         
                         euclid_dist = function (X, X2) {
                           r2 <- self$square_dist(X, X2)
-                          tf$sqrt(r2 + 1e-12)
+                          tf$sqrt(r2 + to(1e-12))
                         },
                         
                         Kdiag = function (X)
                           tf$fill(tf$pack(list(tf$shape(X)[0])),
                                   tf$squeeze(self$variance))
                         
+                      ),
+                      active = list(
+                        variance = kernel_parameter(".variance"),
+                        lengthscales = kernel_parameter(".lengthscales")
                       ))
 
 # The radial basis function (RBF) or squared exponential kernel
@@ -248,8 +254,9 @@ RBF <- R6Class('RBF',
                public = list(
                  
                  K = function (X, X2 = NULL) {
-                   lis <- self$.slice(X, X2)
-                   tf$mul(self$variance, tf$exp(-self$square_dist(lis$X, lis$X2) / 2))
+                   X <- self$.slice(X)
+                   X2 <- self$.slice(X2)
+                   tf$mul(self$variance, tf$exp(-self$square_dist(X, X2) / to(2)))
                  }
                  
                ))
@@ -261,9 +268,7 @@ Linear <- R6Class('Linear',
                
                public = list(
                  
-                 variance = NULL,
-                 
-                 lengthscales = NULL,
+                 .variance = NULL,
                  
                  ARD = NULL,
                  
@@ -271,7 +276,6 @@ Linear <- R6Class('Linear',
                  
                  initialize = function (input_dim,
                                         variance = 1,
-                                        lengthscales = NULL,
                                         active_dims = NULL,
                                         ARD = FALSE) {
                    
@@ -293,17 +297,21 @@ Linear <- R6Class('Linear',
                  },
                  
                  K = function (X, X2 = NULL) {
-                   lis <- self$.slice(X, X2)
+                   X <- self$.slice(X)
+                   X2 <- self$.slice(X2)
                    
                    if (is.null(X2))
-                     tf$matmul(X * self$variance, tf$transpose(X))
+                     tf$matmul(tf$mul(X, self$variance), tf$transpose(X))
                    else 
-                     tf$matmul(X * self$variance, tf$transpose(X2))
+                     tf$matmul(tf$mul(X, self$variance), tf$transpose(X2))
                  },
                  
                  Kdiag = function (X)
                    tf$reduce_sum(tf$square(X) * self$variance, 1L)
                  
+               ),
+               active = list(
+                 variance = kernel_parameter(".variance")
                ))
 
 # The Exponential kernel
@@ -314,9 +322,10 @@ Exponential <- R6Class('Exponential',
                        public = list(
                          
                          K = function (X, X2 = NULL) {
-                           lis <- self$.slice(X, X2)
-                           r <- self$euclid_dist(lis$X, lis$X2)
-                           self$variance * tf$exp(-0.5 * r)
+                           X <- self$.slice(X)
+                           X2 <- self$.slice(X2)
+                           r <- self$euclid_dist(X, X2)
+                           self$variance * tf$exp(to(-0.5) * r)
                          }
                          
                        ))
@@ -329,8 +338,9 @@ Matern12 <- R6Class('Matern12',
                     public = list(
                       
                       K = function (X, X2 = NULL) {
-                        lis <- self$.slice(X, X2)
-                        r <- self$euclid_dist(lis$X, lis$X2)
+                        X <- self$.slice(X)
+                        X2 <- self$.slice(X2)
+                        r <- self$euclid_dist(X, X2)
                         self$variance * tf$exp(-r)
                       }
                       
@@ -344,9 +354,10 @@ Matern32 <- R6Class('Matern32',
                     public = list(
                       
                       K = function (X, X2 = NULL) {
-                        lis <- self$.slice(X, X2)
-                        r <- self$euclid_dist(lis$X, lis$X2)
-                        self$variance * (1 + sqrt(3) * r) * tf$exp(-sqrt(3) * r)
+                        X <- self$.slice(X)
+                        X2 <- self$.slice(X2)
+                        r <- self$euclid_dist(X, X2)
+                        self$variance * (to(1 + sqrt(3)) * r) * tf$exp(to(-sqrt(3)) * r)
                       }
                       
                     ))
@@ -359,11 +370,12 @@ Matern52 <- R6Class('Matern52',
                     public = list(
                       
                       K = function (X, X2 = NULL) {
-                        lis <- self$.slice(X, X2)
-                        r <- self$euclid_dist(lis$X, lis$X2)
-                        self$variance * (1 + sqrt(5) * r * 5 / 3 *
+                        X <- self$.slice(X)
+                        X2 <- self$.slice(X2)
+                        r <- self$euclid_dist(X, X2)
+                        self$variance * (t(1 + sqrt(5)) * r * to(5 / 3) *
                                            tf$square(r)) *
-                          tf$exp(-sqrt(5) * r)
+                          tf$exp(to(-sqrt(5)) * r)
                       }
                       
                     ))
@@ -376,8 +388,9 @@ Cosine <- R6Class('Cosine',
                     public = list(
                       
                       K = function (X, X2 = NULL) {
-                        lis <- self$.slice(X, X2)
-                        r <- self$euclid_dist(lis$X, lis$X2)
+                        X <- self$.slice(X)
+                        X2 <- self$.slice(X2)
+                        r <- self$euclid_dist(X, X2)
                         self$variance * tf$cos(r)
                       }
                       
@@ -393,11 +406,11 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                   
                   public = list(
                     
-                    period = NULL,
+                    .period = NULL,
                     
-                    variance = NULL,
+                    .variance = NULL,
                     
-                    lengthscales = NULL,
+                    .lengthscales = NULL,
                     
                     ARD = NULL,
                     
@@ -423,21 +436,27 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                     
                     K = function (X, X2 = NULL) {
                       
-                      lis <- self$.slice(X, X2)
-                      if (is.null(lis$X2))
-                        lis$X2<- lis$X
+                      X <- self$.slice(X)
+                      X2 <- self$.slice(X2)
+                      if (is.null(X2))
+                        X2 <- X
                       
                       # Introduce dummy dimension so we can use broadcasting
-                      f <- tf$expand_dims(lis$X, 1)  # now N x 1 x D
-                      f2 <- tf$expand_dims(lis$X2, 0)  # now 1 x M x D
+                      f <- tf$expand_dims(X, 1L)  # now N x 1 x D
+                      f2 <- tf$expand_dims(X2, 0L)  # now 1 x M x D
                       
-                      r <- pi * (f - f2) / self$period
-                      r = tf$reduce_sum(tf$square(tf$sin(r) / self$lengthscales), 2)
+                      r <- to(pi) * (f - f2) / self$period
+                      r = tf$reduce_sum(tf$square(tf$sin(r) / self$lengthscales), 2L)
                       
-                      self$variance * tf$exp(-0.5 * r)
+                      self$variance * tf$exp(to(-0.5) * r)
                       
                     }
                     
+                  ),
+                  active = list(
+                    period = kernel_parameter(".period"),
+                    variance = kernel_parameter(".variance"),
+                    lengthscales = kernel_parameter(".lengthscales")
                   ))
 
 make_kernel_names <- function (kern_list) {
@@ -521,22 +540,18 @@ Add <- R6Class('Add',
                  
                  K = function (X, X2 = NULL) {
                    
-                   ans <- self$kern_list[[1]]$K(X, X2)
-                   
-                   for (k in self$kern_list[[-1]])
-                     ans <- tf$add(ans, k$K(X, X2))
-                   
-                   ans
+                   Ks <- lapply(self$kern_list, function (x) x$K(X, X2))
+                   names(Ks) <- NULL
+                   tf$add_n(Ks)
+                 
                  },
                  
                  Kdiag = function (X) {
                    
-                   ans <- self$kern_list[[1]]$Kdiag(X, X2)
+                   Ks <- lapply(self$kern_list, function (x) x$Kdiag(X))
+                   names(Ks) <- NULL
+                   tf$add_n(Ks)
                    
-                   for (k in self$kern_list[[-1]])
-                     ans <- tf$add(ans, k$Kdiag(X, X2))
-                   
-                   ans
                  }
                  
                ))
@@ -547,22 +562,16 @@ Prod <- R6Class('Prod',
                  
                  K = function (X, X2 = NULL) {
                    
-                   ans <- self$kern_list[[1]]$K(X, X2)
+                   Ks <- lapply(self$kern_list, function (x) x$K(X, X2))
+                   tf_mul_n(Ks)
                    
-                   for (k in self$kern_list[[-1]])
-                     ans <- tf$mul(ans, k$K(X, X2))
-                   
-                   ans
                  },
                  
                  Kdiag = function (X) {
                    
-                   ans <- self$kern_list[[1]]$Kdiag(X, X2)
+                   Ks <- lapply(self$kern_list, function (x) x$Kdiag(X))
+                   tf_mul_n(Ks)
                    
-                   for (k in self$kern_list[[-1]])
-                     ans <- tf$mul(ans, k$Kdiag(X, X2))
-                   
-                   ans
                  }
                  
                ))
