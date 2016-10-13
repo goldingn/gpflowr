@@ -42,22 +42,16 @@ Kern <- R6Class("Kern",
                     
                   },
                   
-                  .slice = function (X, X2) {
+                  .slice = function (x) {
+                    # get the required columns of x
                     
-
                     # if X isn't a tensorflow object, index from 1
                     dims <- self$active_dims
                     
-                    if (!inherits(X, 'tensorflow.builtin.object'))
+                    if (!inherits(x, 'tensorflow.builtin.object'))
                       dims <- dims + 1 
                     
-                    
-                    X <- X[, dims, drop = FALSE]
-                      
-                    if (!is.null(X2))
-                      X2 <- X2[, self$active_dims, drop = FALSE]
-                      
-                    list(X = X, X2 = X2)
+                    x[, dims, drop = FALSE]
                     
                   },
 
@@ -260,8 +254,9 @@ RBF <- R6Class('RBF',
                public = list(
                  
                  K = function (X, X2 = NULL) {
-                   lis <- self$.slice(X, X2)
-                   tf$mul(self$variance, tf$exp(-self$square_dist(lis$X, lis$X2) / to(2)))
+                   X <- self$.slice(X)
+                   X2 <- self$.slice(X2)
+                   tf$mul(self$variance, tf$exp(-self$square_dist(X, X2) / to(2)))
                  }
                  
                ))
@@ -302,12 +297,13 @@ Linear <- R6Class('Linear',
                  },
                  
                  K = function (X, X2 = NULL) {
-                   lis <- self$.slice(X, X2)
+                   X <- self$.slice(X)
+                   X2 <- self$.slice(X2)
                    
                    if (is.null(X2))
-                     tf$matmul(X * self$variance, tf$transpose(X))
+                     tf$matmul(tf$mul(X, self$variance), tf$transpose(X))
                    else 
-                     tf$matmul(X * self$variance, tf$transpose(X2))
+                     tf$matmul(tf$mul(X, self$variance), tf$transpose(X2))
                  },
                  
                  Kdiag = function (X)
@@ -326,8 +322,9 @@ Exponential <- R6Class('Exponential',
                        public = list(
                          
                          K = function (X, X2 = NULL) {
-                           lis <- self$.slice(X, X2)
-                           r <- self$euclid_dist(lis$X, lis$X2)
+                           X <- self$.slice(X)
+                           X2 <- self$.slice(X2)
+                           r <- self$euclid_dist(X, X2)
                            self$variance * tf$exp(to(-0.5) * r)
                          }
                          
@@ -341,8 +338,9 @@ Matern12 <- R6Class('Matern12',
                     public = list(
                       
                       K = function (X, X2 = NULL) {
-                        lis <- self$.slice(X, X2)
-                        r <- self$euclid_dist(lis$X, lis$X2)
+                        X <- self$.slice(X)
+                        X2 <- self$.slice(X2)
+                        r <- self$euclid_dist(X, X2)
                         self$variance * tf$exp(-r)
                       }
                       
@@ -356,8 +354,9 @@ Matern32 <- R6Class('Matern32',
                     public = list(
                       
                       K = function (X, X2 = NULL) {
-                        lis <- self$.slice(X, X2)
-                        r <- self$euclid_dist(lis$X, lis$X2)
+                        X <- self$.slice(X)
+                        X2 <- self$.slice(X2)
+                        r <- self$euclid_dist(X, X2)
                         self$variance * (to(1 + sqrt(3)) * r) * tf$exp(to(-sqrt(3)) * r)
                       }
                       
@@ -371,8 +370,9 @@ Matern52 <- R6Class('Matern52',
                     public = list(
                       
                       K = function (X, X2 = NULL) {
-                        lis <- self$.slice(X, X2)
-                        r <- self$euclid_dist(lis$X, lis$X2)
+                        X <- self$.slice(X)
+                        X2 <- self$.slice(X2)
+                        r <- self$euclid_dist(X, X2)
                         self$variance * (t(1 + sqrt(5)) * r * to(5 / 3) *
                                            tf$square(r)) *
                           tf$exp(to(-sqrt(5)) * r)
@@ -388,8 +388,9 @@ Cosine <- R6Class('Cosine',
                     public = list(
                       
                       K = function (X, X2 = NULL) {
-                        lis <- self$.slice(X, X2)
-                        r <- self$euclid_dist(lis$X, lis$X2)
+                        X <- self$.slice(X)
+                        X2 <- self$.slice(X2)
+                        r <- self$euclid_dist(X, X2)
                         self$variance * tf$cos(r)
                       }
                       
@@ -435,16 +436,17 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                     
                     K = function (X, X2 = NULL) {
                       
-                      lis <- self$.slice(X, X2)
-                      if (is.null(lis$X2))
-                        lis$X2<- lis$X
+                      X <- self$.slice(X)
+                      X2 <- self$.slice(X2)
+                      if (is.null(X2))
+                        X2 <- X
                       
                       # Introduce dummy dimension so we can use broadcasting
-                      f <- tf$expand_dims(lis$X, 1L)  # now N x 1 x D
-                      f2 <- tf$expand_dims(lis$X2, 0L)  # now 1 x M x D
+                      f <- tf$expand_dims(X, 1L)  # now N x 1 x D
+                      f2 <- tf$expand_dims(X2, 0L)  # now 1 x M x D
                       
-                      r <- pi * (f - f2) / self$period
-                      r = tf$reduce_sum(tf$square(tf$sin(r) / self$lengthscales), 2)
+                      r <- to(pi) * (f - f2) / self$period
+                      r = tf$reduce_sum(tf$square(tf$sin(r) / self$lengthscales), 2L)
                       
                       self$variance * tf$exp(to(-0.5) * r)
                       
