@@ -97,7 +97,7 @@ Static <- R6Class('Static',
                   
                   public = list(
                     
-                    variance = NULL,
+                    .variance = NULL,
                     
                     initialize = function (input_dim,
                                            variance = 1,
@@ -113,6 +113,9 @@ Static <- R6Class('Static',
                       tf$fill(tf$pack(list(tf$shape(X)[0])),
                               tf$squeeze(self$variance))
                     
+                  ),
+                  active = list(
+                    variance = kernel_parameter(".variance")
                   ))
 
 # The White kernel
@@ -160,9 +163,6 @@ Constant <- R6Class('Constant',
                       }
                     ))
 
-# Another name for the Constant kernel, included for convenience.
-Bias <- Constant
-
 # Base class for kernels that are stationary, that is, they only depend on
 # 
 # r = || x - x' ||
@@ -176,9 +176,9 @@ Stationary <- R6Class('Stationary',
                       
                       public = list(
                         
-                        variance = NULL,
+                        .variance = NULL,
                         
-                        lengthscales = NULL,
+                        .lengthscales = NULL,
                         
                         ARD = NULL,
                         
@@ -252,6 +252,10 @@ Stationary <- R6Class('Stationary',
                           tf$fill(tf$pack(list(tf$shape(X)[0])),
                                   tf$squeeze(self$variance))
                         
+                      ),
+                      active = list(
+                        variance = kernel_parameter(".variance"),
+                        lengthscales = kernel_parameter(".lengthscales")
                       ))
 
 # The radial basis function (RBF) or squared exponential kernel
@@ -275,9 +279,7 @@ Linear <- R6Class('Linear',
                
                public = list(
                  
-                 variance = NULL,
-                 
-                 lengthscales = NULL,
+                 .variance = NULL,
                  
                  ARD = NULL,
                  
@@ -285,7 +287,6 @@ Linear <- R6Class('Linear',
                  
                  initialize = function (input_dim,
                                         variance = 1,
-                                        lengthscales = NULL,
                                         active_dims = NULL,
                                         ARD = FALSE) {
                    
@@ -318,6 +319,9 @@ Linear <- R6Class('Linear',
                  Kdiag = function (X)
                    tf$reduce_sum(tf$square(X) * self$variance, 1L)
                  
+               ),
+               active = list(
+                 variance = kernel_parameter(".variance")
                ))
 
 # The Exponential kernel
@@ -407,11 +411,11 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                   
                   public = list(
                     
-                    period = NULL,
+                    .period = NULL,
                     
-                    variance = NULL,
+                    .variance = NULL,
                     
-                    lengthscales = NULL,
+                    .lengthscales = NULL,
                     
                     ARD = NULL,
                     
@@ -452,6 +456,11 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                       
                     }
                     
+                  ),
+                  active = list(
+                    period = kernel_parameter(".period"),
+                    variance = kernel_parameter(".variance"),
+                    lengthscales = kernel_parameter(".lengthscales")
                   ))
 
 make_kernel_names <- function (kern_list) {
