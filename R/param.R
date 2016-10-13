@@ -188,7 +188,7 @@ Param <- R6Class('Param',
                    fixed = FALSE,
                    
                    initialize = function (array, transform = transforms$Identity()) {
-                     self$value <- array
+                     self$value <- as.array(array)
                      self$transform <- transform
                    },
                    
@@ -330,10 +330,6 @@ Param <- R6Class('Param',
 #                          inherit = Parentable,
 #                          public = list(
 #
-#                            print = function (...) {
-#                              cat ('DataHolder object\n')
-#                            }
-#
 #                          ))
 
 Parameterized <- R6Class('Parameterized',
@@ -360,11 +356,7 @@ Parameterized <- R6Class('Parameterized',
                            .end_tf_mode = function () {
                              self$.tf_mode <- FALSE
                            },
-                           
-                           print = function (...) {
-                             cat ('Parameterized object\n')
-                           },
-                           
+
                            `$` = function (x, i) {
                              # return a tensorflow array if `x` is in tf_mode,
                              # and the object containing that array otherwise
@@ -382,10 +374,7 @@ Parameterized <- R6Class('Parameterized',
 ParamList <- R6Class('ParamList',
                      inherit = Parameterized,
                      public = list(
-                       
-                       print = function (...) {
-                         cat ('ParamList object\n')
-                       }
+
                        
                      ))
 
