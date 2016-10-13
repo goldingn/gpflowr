@@ -144,9 +144,9 @@ Constant <- R6Class('Constant',
                       K = function (X, X2 = NULL) {
                         
                         if (is.null(X2))
-                          shape <- tf$pack(list(tf$shape(X)[1], tf$shape(X)[0]))
+                          shape <- tf$pack(list(tf$shape(X)[0], tf$shape(X)[0]))
                         else
-                          shape <- tf$pack(list(tf$shape(X)[1], tf$shape(X2)[0]))
+                          shape <- tf$pack(list(tf$shape(X)[0], tf$shape(X2)[0]))
                         
                         tf$fill(shape, tf$squeeze(self$variance))
                       }
