@@ -539,13 +539,15 @@ Add <- R6Class('Add',
                  K = function (X, X2 = NULL) {
                    
                    Ks <- lapply(self$kern_list, function (x) x$K(X, X2))
+                   names(Ks) <- NULL
                    tf$add_n(Ks)
                  
                  },
                  
                  Kdiag = function (X) {
                    
-                   Ks <- lapply(self$kern_list, function (x) x$Kdiag(X, X2))
+                   Ks <- lapply(self$kern_list, function (x) x$Kdiag(X))
+                   names(Ks) <- NULL
                    tf$add_n(Ks)
                    
                  }
@@ -565,7 +567,7 @@ Prod <- R6Class('Prod',
                  
                  Kdiag = function (X) {
                    
-                   Ks <- lapply(self$kern_list, function (x) x$Kdiag(X, X2))
+                   Ks <- lapply(self$kern_list, function (x) x$Kdiag(X))
                    tf_mul_n(Ks)
                    
                  }
