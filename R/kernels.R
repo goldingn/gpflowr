@@ -40,6 +40,10 @@ Kern <- R6Class("Kern",
                       self$active_dims <- tf$constant(array(active_dims), tf$int32)
                     }
                     
+                    # add autoflow to the compute methods
+                    autoflow('compute_K', 2)
+                    autoflow('compute_K_symm', 1)
+                    
                   },
                   
                   .slice = function (x) {
@@ -62,11 +66,11 @@ Kern <- R6Class("Kern",
                   `*` = function (self, other)
                     Prod$new(list(self, other)),
                     
-                  # add autoflow
+                  # with autoflow
                   compute_K = function (X, Z)
                     self$K(X, Z),
                   
-                  # add autoflow
+                  # with autoflow
                   compute_K_symm = function (X)
                     self$K(X),
                   
