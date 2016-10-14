@@ -338,6 +338,7 @@ Parameterized <- R6Class('Parameterized',
                            
                            x = NULL,
                            .tf_mode = FALSE,
+                           .tf_mode_storage = list(),
                            
                            initialize = function () {
                              self$.tf_mode <- FALSE
