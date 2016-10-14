@@ -56,37 +56,41 @@ AutoFlow <- function (method_name, tf_method, envir, tf_arg_tuples = list()) {
     R_args <- list(...)
     names(R_args) <- unlist(tf_arg_tuples)
     feed_dict <- dict(R_args)
-    feed_dict[storage[['free_vars']]] <- instance$get_free_state()
-    feed_dict <- c(feed_dict, instance$get_feed_dict())
+    feed_dict[storage[['free_vars']]] <- self$get_free_state()
+    feed_dict <- c(feed_dict, self$get_feed_dict())
     
     # exeecute the method, using the newly created dict
     storage[['session']]$run(storage[['tf_result']], feed_dict = feed_dict)
     
   }
+  
+  environment(runnable) <- envir
   runnable
 }
 
 
-# function to apply AutoFlow to an already defined method in an R6 generator's
-# initialize() method
+# function to apply AutoFlow to an already defined method in an R6 generator's 
+# initialize() method. dots accepts dtype objects to create placeholders for the
+# arguments of the method being overwritten
 autoflow <- function(name, ...) {
   
-  # generate a random name to avoid pass-by-reference
-  hx <- paste(sample(letters, 10, replace = TRUE),
-              collapse = '')
-  
-  # convert the tuple list to a character string
-  tuple_list_string <- capture.output(dput(...))
+  # create the dtype list as a character string
+  dtypes <- deparse(substitute(list(...)))
+  dtype_string <- ifelse(dtypes == 'list()',
+                         '',
+                         sprintf(', %s', dtypes))
   
   # in the parent environment, unlock the method, replace it with the autoflowed
   # version (avoiding shallow copy), then relock it
   txt <- sprintf("unlockBinding('%s', self)
-                 %s <- self$%s
-                 self$%s <- AutoFlow('%s', %s, %s)
+                 tf_method <- self$%s
+                 envir <- environment(self$%s)
+                 self$%s <- AutoFlow('%s', tf_method, envir%s)
                  lockBinding('%s', self)",
                  name,
-                 hx, name,
-                 name, name, hx, tuple_list_string,
+                 name,
+                 name,
+                 name, name, dtype_string,
                  name)
   
   eval(parse(text = txt),
