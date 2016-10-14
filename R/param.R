@@ -294,8 +294,6 @@ Param <- R6Class('Param',
                    #                       }
                    #                    },
                    
-                   # could overload str.R6 for this?
-                   
                    # def __str__(self, prepend=''):
                    #   return prepend + \
                    # '\033[1m' + self.name + '\033[0m' + \
@@ -338,9 +336,92 @@ Parameterized <- R6Class('Parameterized',
                            
                            x = NULL,
                            .tf_mode = FALSE,
+                           .tf_mode_storage = list(),
                            
                            initialize = function () {
                              self$.tf_mode <- FALSE
+                           },
+                           
+                           get_parameter_dict = function (d = NULL) {
+                             
+                             if (is.null(d))
+                               d  <- list()
+                             
+                             for (p in self$sorted_params)
+                               p$get_parameter_dict(d)
+                             
+                             d
+                           },
+                           
+                           set_parameter_dict = function (d) {
+                             for (p in self$sorted_params)
+                               p$set_parameter_dict(d)
+                           },
+
+                           `$` = function (x, i) {
+                             # return a tensorflow array if `x` is in tf_mode,
+                             # and the object containing that array otherwise
+                             # equivalent to python __getattribute__ method
+                             o <- x[[i]]
+                             
+                             if (has(x, '.tf_mode') && x[['.tf_mode']] && has(o, '.tf_array'))
+                               o <- o[['.tf_array']]
+                             
+                             o
+                           },
+                           
+                           # `$<-` = function (x, i, value) {
+                           #
+                           # },
+                           
+                           .kill_autoflow = function () {
+                             # remove all AutoFlow storage dicts recursively
+                             self$.tf_mode_storage <- list()
+                             
+                             for (i in seq_len(self$sorted_params)) {
+                               if (inherits(self$sorted_params[[i]]))
+                                 self$sorted_params[[i]]$.kill_autoflow()
+                             }
+                              
+                           },
+                           
+                           make_tf_array = function (X) {
+                             # X is a tf placeholder. It gets passed to all the
+                             # children of this class (that are Parameterized or
+                             # Param objects), which then construct their
+                             # tf_array variables from consecutive sections.
+                             nrow <- X$get_shape()$as_list()[1]
+                             
+                             count <- 0
+                             for (i in seq_along(self$sorted_params))
+                               count  <- count + self$sorted_params[[i]]$make_tf_array(X[count:nrow])
+                               
+                             count
+                           },
+                           
+                           get_free_state = function () {
+                             # recurse get_free_state on all child parameters, and hstack them.
+                             free_states <- lapply(self$sorted_params,
+                                              function(x) x$get_free_state())
+                             array(do.call(c, free_states))
+                           },
+
+                           get_feed_dict = function () {
+                             # Recursively fetch a dictionary matching up fixed-placeholders to
+                             # associated values
+                             lapply(c(self$sorted_params, self$data_holders),
+                                    function(x) x$get_feed_dict())
+                           },
+
+                           set_state = function (x) {
+                             # Set the values of all the parameters by recursion
+                             nrow <- x$get_shape()$as_list()[1]
+                             
+                             count <- 0
+                             for (name in names(self$sorted_params))
+                               count  <- count + self$sorted_params[[name]]$set_state(x[count:nrow])
+                             
+                             count
                            },
                            
                            tf_mode = function () {
@@ -357,15 +438,89 @@ Parameterized <- R6Class('Parameterized',
                              self$.tf_mode <- FALSE
                            },
 
-                           `$` = function (x, i) {
-                             # return a tensorflow array if `x` is in tf_mode,
-                             # and the object containing that array otherwise
-                             o <- x[[i]]
+                           build_prior = function () {
+                             # Build a tf expression for the prior by summing all child-node priors.
+                             nparam <- length(self$sorted_params)
+                             pri <- self$sorted_params[[1]]$build_prior()
                              
-                             if (has(x, '.tf_mode') && x[['.tf_mode']] && has(o, '.tf_array'))
-                               o <- o[['.tf_array']]
+                             if (nparam > 0) {
+                               for (i in 2:nparam)
+                                 pri <- pri + self$sorted_params[[i]]$build_prior()
+                             }
+                           }#,
+                           # 
+                           # str = function (object, prepend = '') {
+                           #   
+                           # },
+                           # 
+                           # .html_table_rows = function (name_prefix = '') {
+                           #   
+                           # },
+                           # 
+                           # .repr_html_ = function () {
+                           #   
+                           # },
+                           # 
+                           # .__setstate__ = function (d) {
+                           #   
+                           # }
+                           
+                           ),
+                         active = list(
+                           
+                           sorted_params = function (value) {
+                             # Return a list of all the child parameters, sorted by id. This makes
+                             # sure they're always in the same order.
                              
-                             o
+                             if (!missing(value))
+                               warning ('assignment ignored')
+                             
+                             # find names of elements
+                             names <- names(self)
+                             names <- names[names != 'parent']
+                             
+                             # pull out those that are Param-esque
+                             params <- list()
+                             for (name in names) {
+                               if (inherits(self[[name]], c('Param', 'Parameterized')))
+                                 params[[name]] <- self[[name]]
+                             }
+                             
+                             # order them
+                             params <- params[order(names(params))]
+                               
+                           },
+                           
+                           data_holders = function (value) {
+                             # Return a list of all the child DataHolders                             
+                             if (!missing(value))
+                               warning ('assignment ignored')
+                             
+                             params <- list()
+                             for (name in names(self)) {
+                               if (inherits(self[[name]], 'DataHolder'))
+                                 params[[name]] <- self[[name]]
+                             }
+                             params
+                           },
+                           
+                           fixed = function (value) {
+                             
+                             if (!missing(value)) {
+                               
+                               for (name in names(self))
+                                 self[[name]]$fixed <- value
+                               
+                             } else {
+                               
+                               ans <- vapply(self$sorted_params,
+                                             function(x) x$fixed,
+                                             FALSE)
+                               
+                               return (ans)
+                               
+                             }
+                             
                            }
                            
                          ))
