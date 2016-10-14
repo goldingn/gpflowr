@@ -633,7 +633,7 @@ Prod <- R6Class('Prod',
 NULL
 
 #' @export
-#' @include module-class.R param.R decorator-class.R R6-magic.R
+#' @include module-class.R param.R R6-magic.R
 kernels <- module(White,
                   Constant,
                   Bias = Constant,
