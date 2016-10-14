@@ -120,7 +120,7 @@ White <- R6Class('White',
                    
                    K = function (X, X2 = NULL) {
                      
-                     if (is.null(X2)) {
+                     if (!exists('X2') || is.null(X2)) {
                        
                        d <- tf$fill(tf$pack(list(tf$shape(X)[0])),
                                     tf$squeeze(self$variance))
@@ -147,7 +147,7 @@ Constant <- R6Class('Constant',
                       
                       K = function (X, X2 = NULL) {
                         
-                        if (is.null(X2))
+                        if (!exists('X2') || is.null(X2))
                           shape <- tf$pack(list(tf$shape(X)[0], tf$shape(X)[0]))
                         else
                           shape <- tf$pack(list(tf$shape(X)[0], tf$shape(X2)[0]))
@@ -217,7 +217,7 @@ Stationary <- R6Class('Stationary',
                           X <- tf$truediv(X, self$lengthscales)
                           Xs <- tf$reduce_sum(tf$square(X), 1L)
                           
-                          if (is.null(X2)) {
+                          if (!exists('X2') || is.null(X2)) {
                             
                             return (to(-2) * tf$matmul(X, tf$transpose(X)) +
                                       tf$reshape(Xs, c(-1L, 1L)) +
@@ -304,7 +304,7 @@ Linear <- R6Class('Linear',
                    X <- self$.slice(X)
                    X2 <- self$.slice(X2)
                    
-                   if (is.null(X2))
+                   if (!exists('X2') || is.null(X2))
                      tf$matmul(tf$mul(X, self$variance), tf$transpose(X))
                    else 
                      tf$matmul(tf$mul(X, self$variance), tf$transpose(X2))
@@ -442,7 +442,7 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                       
                       X <- self$.slice(X)
                       X2 <- self$.slice(X2)
-                      if (is.null(X2))
+                      if (!exists('X2') || is.null(X2))
                         X2 <- X
                       
                       # Introduce dummy dimension so we can use broadcasting
