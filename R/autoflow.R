@@ -11,38 +11,43 @@
 # the function `autoflow()` (below) should be used in the `initialize()` method,
 # to overwrite a public method by wrapping it with this
 
+# method_name is a string saying which method to overwrite
+# tf_method is the function itself
+# envir is the environment of the original method
+# tf_arg_tuples is a list of tf dtypes
+
 #' @importFrom utils capture.output
-Autoflow <- function (method_name, tf_method, tf_arg_tuples = list()) {
+AutoFlow <- function (method_name, tf_method, envir, tf_arg_tuples = list()) {
   # need to work out how to get the name of the method!
   
   storage_name <- sprintf('_%s_AF_storage',
                           method_name)
   
-  runnable <- function (instance, ...) {
-    if (has(instance, storage_name)) {
+  runnable <- function (...) {
+    if (has(self[['.tf_mode_storage']], storage_name)) {
       
-      storage <- instance[['.tf_mode_storage']][[storage_name]]
+      storage <- self[['.tf_mode_storage']][[storage_name]]
       
     } else {
       
       storage <- list()
       storage[['free_vars']] <- tf$placeholder(tf$float64)
-      instance$make_tf_array(storage$free_vars)
+      self$make_tf_array(storage$free_vars)
       storage[['tf_args']] <- lapply(tf_arg_tuples, tf$placeholder)
       
-      # with instance temporarily in tf_mode, execute tf_mode on instance,
+      # with self temporarily in tf_mode, execute tf_method on self,
       # optionally including placeholders
-      with(instance$tf_mode %as% instance,
+      with(self$tf_mode %as% instance,
            storage[['tf_result']] <- do.call(tf_method,
                                              c(instance, storage[['tf_args']])))
       
       # prep the session
       storage[['session']] <- tf$Session()
       storage[['session']]$run(tf$initialize_all_variables(),
-                               feed_dict = instance$get_feed_dict())
+                               feed_dict = self$get_feed_dict())
       
       # store the storage object
-      instance[['.tf_mode_storage']][[storage_name]] <- storage
+      self[['.tf_mode_storage']][[storage_name]] <- storage
       
     }
     
