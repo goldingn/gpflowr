@@ -19,11 +19,11 @@ test_that('rbf (Gaussian) kernel is equal to the reference', {
 test_that('periodic kernel is equal to the reference', {
 
   referencePeriodicKernel <- function(X, lengthScale, signalVariance, period ){
-  	base <- matrix(0,nrow(X),nrow(X))
-  	for(i in 1:dim(X)[2]){
-    	base <- base + (sin(pi*outer(X[,i],X[,i],"-")/period)/lengthScale)^2
-  	}
-  	exp_dist <- exp( -0.5* base )
+    base <- matrix(0,nrow(X),nrow(X))
+    for(i in 1:dim(X)[2]){
+      base <- base + (sin(pi*outer(X[,i],X[,i],"-")/period)/lengthScale)^2
+    }
+    exp_dist <- exp( -0.5* base )
     return(signalVariance * exp_dist)
   }
 
