@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>GPflowR: Gaussian processes in tensorflow, via R — GPflowR • gpflowr</title>
+<title>GPflow kernel objects — kernels • gpflowr</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -71,20 +71,71 @@
       <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>GPflowR: Gaussian processes in tensorflow, via R</h1>
+    <h1>GPflow kernel objects</h1>
     </div>
 
     
-    <p>GPflowR: Gaussian processes in tensorflow, via R</p>
+    <p>Methods to construct, combine and evaluate kernels (covariance functions)</p>
     
 
         
+    <h2 class="hasAnchor" id="usage"><a class="anchor" href="#usage"></a>Usage</h2>
+
+    <p><pre>
+ # static kernel objects
+ k &lt;- kernels$White(input_dim, variance = 1, active_dims = NULL)
+ k &lt;- kernels$Constant(input_dim, variance = 1, active_dims = NULL)
+ k &lt;- kernels$Bias(input_dim, variance = 1, active_dims = NULL)</p>
+    <p># stationary kernel objects
+ k &lt;- kernels$RBF(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+ k &lt;- kernels$Exponential(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+ k &lt;- kernels$Matern12(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+ k &lt;- kernels$Matern32(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+ k &lt;- kernels$Matern52(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)</p>
+    <p># non-stationary kernel objects
+ k &lt;- kernels$Linear(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)</p>
+    <p># periodic kernel objects
+ k &lt;- kernels$Cosine(input_dim, variance = 1, lengthscales = NULL, active_dims = NULL, ARD = FALSE)
+ k &lt;- kernels$PeriodicKernel(input_dim, period = 1, variance = 1, lengthscales = NULL, active_dims = NULL)</p>
+    <p># kernel operations
+ k + k
+ k * k</p>
+    <p># kernel object member functions
+ k$K(X, X2 = NULL)
+ k$Kdiag(X)
+ k$compute_K(X, Z)
+ k$compute_K_symm(X)
+ #k$compute_Kdiag(X)
+</pre></p>
+    
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+
+    <p></p>
+    <p><dl class='dl-horizontal'>
+<dt>input_dim</dt><dd>An integer vector giving the dimensions of the matrix 
+<code>X</code> on which member functions will operate.</dd> <dt>active_dims</dt><dd>An
+integer vector identifying the columns of <code>X</code> on which this kernel
+operates. If <code>NULL</code> (default), all columns are active</dd> <dt>variance</dt><dd>A
+positive numeric scalar giving the initial value of the marginal variance of
+the kernel.</dd> <dt>lengthscales</dt><dd>A positive numeric vector giving the initial
+value of kernel lengthscales for the columns indexed by <code>active_dims</code>.</dd> 
+<dt>period</dt><dd>A positive numeric vector giving the initial value of the 
+periodicity for the columns indexed by <code>active_dims</code>.</dd> 
+<dt>ARD</dt><dd>Whether allow lengthscales and periodicities to vary between
+active dimensions. If <code>FALSE</code>, <code>lengthscales</code> and <code>period</code>
+should be scalar.</dd>
+</dl></p>
+    
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-                </ul>
+      
+      <li><a href="#usage">Usage</a></li>
+
+      <li><a href="#arguments">Arguments</a></li>
+          </ul>
 
   </div>
 </div>

@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>GPflowR: Gaussian processes in tensorflow, via R — GPflowR • gpflowr</title>
+<title>parameter transformation objects — transforms • gpflowr</title>
 
 <!-- jquery -->
 <script src="https://code.jquery.com/jquery-3.1.0.min.js" integrity="sha384-nrOSfDHtoPMzJHjVTdCopGqIqeYETSXhZDFyniQ8ZHcVy08QesyHcnOUpMpqnmWq" crossorigin="anonymous"></script>
@@ -71,20 +71,60 @@
       <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>GPflowR: Gaussian processes in tensorflow, via R</h1>
+    <h1>parameter transformation objects</h1>
     </div>
 
     
-    <p>GPflowR: Gaussian processes in tensorflow, via R</p>
+    <p>transformation objects used internally in GPflowR</p>
     
 
         
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>This module will likely be unexported and not formally documented in
+  the near future. This is essentially a test run of the module documentation
+  set up</p>
+    
+    <h2 class="hasAnchor" id="usage"><a class="anchor" href="#usage"></a>Usage</h2>
+
+    <p><pre>
+ # transform objects
+ t &lt;- transforms$Identity()
+ t &lt;- transforms$Exp(lower = 1e-6)
+ t &lt;- transforms$Log1pe(lower = 1e-6)
+ t &lt;- transforms$Logistic(a = 0, b = 1)
+ t &lt;- transforms$positive(lower = 1e-6)</p>
+    <p># transform object member functions
+ t$forward(x)
+ t$backward(y)
+ t$tf_forward(x)
+ t$tf_log_jacobian(x)
+ </pre></p>
+    
+    <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
+
+    <p></p>
+    <p><dl class='dl-horizontal'>
+<dt>lower</dt><dd>The minimum value that positive transforms can take. This helps
+stability during optimization, because aggressive optimizers can take
+overly-long steps which lead to zero in the transformed variable, causing an
+error.</dd>
+<dt>a, b</dt><dd>The location (<code>a</code>) and scale (<code>b</code>) of the logistic 
+distribution used in the logistic transform.</dd>
+</dl></p>
+    
 
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">
     <h2>Contents</h2>
     <ul class="nav nav-pills nav-stacked">
-                </ul>
+      
+      <li><a href="#details">Details</a></li>
+
+      <li><a href="#usage">Usage</a></li>
+
+      <li><a href="#arguments">Arguments</a></li>
+          </ul>
 
   </div>
 </div>
