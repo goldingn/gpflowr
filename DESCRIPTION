@@ -28,7 +28,7 @@ Suggests:
     testthat
 Collate:
     'R6-magic.R'
-    'decorator-class.R'
+    'autoflow.R'
     'gpflowr-package.R'
     'param.R'
     'module-class.R'

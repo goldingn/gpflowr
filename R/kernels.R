@@ -40,6 +40,10 @@ Kern <- R6Class("Kern",
                       self$active_dims <- tf$constant(array(active_dims), tf$int32)
                     }
                     
+                    # add autoflow to the compute methods
+                    autoflow('compute_K', tf$float64, tf$float64)
+                    autoflow('compute_K_symm', tf$float64)
+                    
                   },
                   
                   .slice = function (x) {
@@ -62,11 +66,11 @@ Kern <- R6Class("Kern",
                   `*` = function (self, other)
                     Prod$new(list(self, other)),
                     
-                  # add autoflow
+                  # with autoflow
                   compute_K = function (X, Z)
                     self$K(X, Z),
                   
-                  # add autoflow
+                  # with autoflow
                   compute_K_symm = function (X)
                     self$K(X),
                   
@@ -116,7 +120,7 @@ White <- R6Class('White',
                    
                    K = function (X, X2 = NULL) {
                      
-                     if (is.null(X2)) {
+                     if (!exists('X2') || is.null(X2)) {
                        
                        d <- tf$fill(tf$pack(list(tf$shape(X)[0])),
                                     tf$squeeze(self$variance))
@@ -143,7 +147,7 @@ Constant <- R6Class('Constant',
                       
                       K = function (X, X2 = NULL) {
                         
-                        if (is.null(X2))
+                        if (!exists('X2') || is.null(X2))
                           shape <- tf$pack(list(tf$shape(X)[0], tf$shape(X)[0]))
                         else
                           shape <- tf$pack(list(tf$shape(X)[0], tf$shape(X2)[0]))
@@ -213,7 +217,7 @@ Stationary <- R6Class('Stationary',
                           X <- tf$truediv(X, self$lengthscales)
                           Xs <- tf$reduce_sum(tf$square(X), 1L)
                           
-                          if (is.null(X2)) {
+                          if (!exists('X2') || is.null(X2)) {
                             
                             return (to(-2) * tf$matmul(X, tf$transpose(X)) +
                                       tf$reshape(Xs, c(-1L, 1L)) +
@@ -300,7 +304,7 @@ Linear <- R6Class('Linear',
                    X <- self$.slice(X)
                    X2 <- self$.slice(X2)
                    
-                   if (is.null(X2))
+                   if (!exists('X2') || is.null(X2))
                      tf$matmul(tf$mul(X, self$variance), tf$transpose(X))
                    else 
                      tf$matmul(tf$mul(X, self$variance), tf$transpose(X2))
@@ -438,7 +442,7 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                       
                       X <- self$.slice(X)
                       X2 <- self$.slice(X2)
-                      if (is.null(X2))
+                      if (!exists('X2') || is.null(X2))
                         X2 <- X
                       
                       # Introduce dummy dimension so we can use broadcasting
@@ -633,7 +637,7 @@ Prod <- R6Class('Prod',
 NULL
 
 #' @export
-#' @include module-class.R param.R decorator-class.R R6-magic.R
+#' @include module-class.R param.R R6-magic.R
 kernels <- module(White,
                   Constant,
                   Bias = Constant,
