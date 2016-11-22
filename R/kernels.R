@@ -32,8 +32,8 @@ Kern <- R6Class("Kern",
                       
                     } else {
                       
-                      if ( !(is.numeric(active_dim) &
-                             is.vector(active_dim) &&
+                      if ( !(is.numeric(active_dims) &
+                             is.vector(active_dims) &&
                              length(active_dims) == input_dim) )
                         stop ('active_dims must be a numeric vector with length input_dim')
                       
