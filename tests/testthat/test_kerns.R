@@ -53,3 +53,36 @@ test_that('periodic kernel is equal to the reference', {
   X_data <- matrix(rnorm(3*D),ncol=D)
   evalKernelError(D, lengthScale, variance, period, X_data)
 })
+
+test_that('Corregionalization kernels check', {
+
+  #setup
+  k <- kernels$Coregion(1, output_dim=3, rank=2)
+  #k$W <- matrix(rnorm(6),3, 2)
+  #k$kappa <- runif(3) + 1
+  X <- matrix(sample(0:2,10,replace=TRUE),10,1)
+  X2 <- matrix(sample(0:2,12,replace=TRUE),12,1)
+
+  # test shape
+  #K <- k$compute_K(X,X2)
+  #expect_that(dim(K), equals(c(10,12)))
+
+  #K <- k$compute_K_symm(X)
+  #expect_that(dim(K), equals(c(10,10)))
+
+  # test diag
+  #K <- k$compute_K_symm(X)
+  #Kdiag <- k$compute_Kdiag(X)
+  #expect_that(dim(diag(K)), equals(dim(Kdiag))) # added by Nicolas
+  #expect_that(diag(K), equals(Kdiag))
+
+  # test slice
+  X <- cbind(X, sample(0:2,10,replace=TRUE),10,1)
+  # k1 <- kernels$Coregion(1, 3, 2, active_dims=0)
+  # k2 <- kernels$RBF(1, active_dims=1)
+  # k <- k1 * k2
+  # K1 <- k$compute_K_symm(X)
+  # K2 <- k1$compute_K_symm(X) * k2$compute_K_symm(X)  # slicing happens inside kernel
+  # expect_that(K1, equals(K2))
+
+})
