@@ -1,9 +1,11 @@
 language: r
 cache: packages
 sudo: required
+dist: trusty
 
 # python update & TensorFlow installation
 before_install:
+ - export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
  - source travis_install.sh
 
 # Install magick++ for pkgdown
