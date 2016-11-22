@@ -78,9 +78,9 @@ test_that('Corregionalization kernels check', {
 
   # test slice
   X <- cbind(X, sample(0:2,10,replace=TRUE),10,1)
-  # k1 <- kernels$Coregion(1, 3, 2, active_dims=0)
-  # k2 <- kernels$RBF(1, active_dims=1)
-  # k <- k1 * k2
+  k1 <- kernels$Coregion(1, 3, 2, active_dims=0)
+  k2 <- kernels$RBF(1, active_dims=1)
+  k <- k1 * k2
   # K1 <- k$compute_K_symm(X)
   # K2 <- k1$compute_K_symm(X) * k2$compute_K_symm(X)  # slicing happens inside kernel
   # expect_that(K1, equals(K2))
