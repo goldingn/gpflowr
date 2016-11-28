@@ -324,11 +324,125 @@ Param <- R6Class('Param',
                  )
 )
 
-# DataHolder <- R6Class('DataHolder',
-#                          inherit = Parentable,
-#                          public = list(
-#
-#                          ))
+DataHolder <- R6Class('DataHolder',
+                         inherit = Parentable,
+                         public = list(
+                           
+                           # An object to represent data which needs to be passed to tensorflow for computation.
+                           #
+                           # This behaves in much the same way as a Param (above), but is always
+                           # 'fixed'. On a call to update_feed_dict, a placeholder-numpy pair is added to the feed_dict.
+                           #
+                           # Getting and setting values
+                           # --
+                           #
+                           #   To get at the values of the data, use the value property:
+                           #
+                           #   >>> m = GPflow.model.Model()
+                           # >>> m.x = GPflow.param.DataHolder(np.array([ 0., 1.]))
+                           # >>> print(m.x.value)
+                           # [[ 0.], [ 1.]]
+                           #
+                           # Changing the value of the data is as simple as assignment
+                           # (once the data is part of a model):
+                           #
+                           # >>> m.x = np.array([ 0., 2.])
+                           # >>> print(m.x.value)
+                           # [[ 0.], [ 2.]]
+                           
+                           .array = NULL,
+                           on_shape_change = NULL,
+                           
+                           initialize = function (array, on_shape_change = 'raise') {
+                             # array is a numpy array of data.
+                             # on_shape_change is one of ('raise', 'pass', 'recompile'), and
+                             # determines the behaviour when the data is set to a new value with a
+                             # different shape
+                             
+                             # super$initialize()
+                             # use this only to check the type is integer or float
+                             dt <- self$.get_type(array)
+                             self$.array <- as.array(array)
+                             
+                             if (!on_shape_change %in% c('raise', 'pass', 'recompile'))
+                               stop ('invalid shape change argument')
+                             self$on_shape_change <- on_shape_change
+                             
+                           },
+                           
+                           .get_type = function (array) {
+                             
+                             # Work out what a sensible type for the array is. if the default type
+                             # is float32, downcast 64bit float to float32. For ints, assume int32
+                             if (is.integer(X))
+                               tf$int32
+                             else if (is.numeric(X))
+                               tf$float64
+                             else 
+                               stop ('unknown data type')
+                           },
+                           
+                           get_feed_dict_keys = function () {
+                             list(self = self$.tf_array)
+                           },
+                           
+                           update_feed_dict = function (key_dict, feed_dict) {
+                             feed_dict[[key_dict[[self]]]] <- self$.array
+                           },
+                           
+                           make_tf_array = function() {
+                             
+                             # get the right rank, but fill shape with NULLs
+                             shp <- replicate(length(dim(self$.array)),
+                                              NULL,
+                                              simplify = FALSE)
+                             
+                             # create placeholder
+                             self$.tf_array <- tf$placeholder(dtype = self$.get_type(self$.array),
+                                                              shape = shp,
+                                                              name = self$name)
+                             
+                           },
+                           
+                           set_data = function (array) {
+                             # Setting a data into self._array before any TensorFlow execution.
+                             # If the shape of the data changes, then either:
+                             #   - raise an exception
+                             # - raise the recompilation flag.
+                             # - do nothing
+                             # according to the option in self.on_shape_change.
+                             if (all.equal(self$shape(), dim(array))) {
+                               
+                               self.array[] <- array[]
+                               
+                             } else {
+                               
+                               if (self.on_shape_change == 'raise') {
+                                 
+                                 stop ("The shape of this data must not change. (perhaps make the model again from scratch?)")
+                                 
+                               } else if (self.on_shape_change == 'recompile') {
+                                 
+                                 self$.array <- array
+                                 self$highest_parent$.needs_recompile <- TRUE
+                                 
+                               } else if (self.on_shape_change == 'pass') {
+                                 
+                                 self$.array <- array
+                                 
+                               }
+                            }
+                               
+                           },
+                           
+                           value = function ()
+                             self$.array,
+                           
+                           shape = function ()
+                             dim(self$.array)
+
+
+                         ))
 
 Parameterized <- R6Class('Parameterized',
                          inherit = Parentable,
@@ -386,6 +500,9 @@ Parameterized <- R6Class('Parameterized',
                            },
                            
                            make_tf_array = function (X) {
+                             # Distribute a flat tensorflow array amongst all
+                             # the child parameter of this instance.
+                             #
                              # X is a tf placeholder. It gets passed to all the
                              # children of this class (that are Parameterized or
                              # Param objects), which then construct their
