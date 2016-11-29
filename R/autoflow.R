@@ -18,7 +18,6 @@
 
 #' @importFrom utils capture.output
 AutoFlow <- function (method_name, tf_method, envir, tf_arg_tuples = list()) {
-  # need to work out how to get the name of the method!
   
   storage_name <- sprintf('_%s_AF_storage',
                           method_name)
@@ -73,13 +72,13 @@ AutoFlow <- function (method_name, tf_method, envir, tf_arg_tuples = list()) {
 # initialize() method. dots accepts dtype objects to create placeholders for the
 # arguments of the method being overwritten
 autoflow <- function(name, ...) {
-  
+
   # create the dtype list as a character string
   dtypes <- deparse(substitute(list(...)))
   dtype_string <- ifelse(dtypes == 'list()',
                          '',
                          sprintf(', %s', dtypes))
-  
+
   # in the parent environment, unlock the method, replace it with the autoflowed
   # version (avoiding shallow copy), then relock it
   txt <- sprintf("unlockBinding('%s', self)
@@ -92,7 +91,7 @@ autoflow <- function(name, ...) {
                  name,
                  name, name, dtype_string,
                  name)
-  
+
   eval(parse(text = txt),
        envir = parent.frame())
 }

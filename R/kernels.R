@@ -17,8 +17,6 @@ Kern <- R6Class("Kern",
                     # input dim is an integer
                     # active dims is a (slice | iterable of integers | None)
                     
-                    super$initialize()
-                    
                     if ( !(is.numeric(input_dim) &
                            length(input_dim) == 1) )
                       stop ('input_dim must be a numeric scalar (the number of dimensions the kernel acts on)')
@@ -189,7 +187,6 @@ Stationary <- R6Class('Stationary',
                           # columns of X are used.
                           # - ARD specifies whether the kernel has one lengthscale per dimension
                           # (ARD=TRUE) or a single lengthscale (ARD=False).
-                          
                           super$initialize(input_dim, active_dims)
                           self$variance <- Param$new(variance, transforms$positive)# constrain positive
                           
@@ -209,6 +206,7 @@ Stationary <- R6Class('Stationary',
                           
                           self$lengthscales <- Param$new(lengthscales, transforms$positive)
                           self$ARD <- ARD
+                          self$.parameter_names <- c(self$.parameter_names, '.lengthscales', '.variance')
                           
                         },
                         
@@ -245,6 +243,7 @@ Stationary <- R6Class('Stationary',
                                   tf$squeeze(self$variance))
                         
                       ),
+                      
                       active = list(
                         variance = kernel_parameter(".variance"),
                         lengthscales = kernel_parameter(".lengthscales")
