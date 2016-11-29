@@ -26,7 +26,7 @@ Kern <- R6Class("Kern",
                     if (is.null(active_dims)) {
                       
                       # by default, count input_dim from 0
-                      self$active_dims <- seq_len(input_dim) - 1
+                      self$active_dims <- seq_len(input_dim)
                       
                     } else {
                       
@@ -50,10 +50,14 @@ Kern <- R6Class("Kern",
                     # if X isn't a tensorflow object, index from 1
                     dims <- self$active_dims
                     
-                    if (!inherits(x, 'tensorflow.builtin.object'))
-                      dims <- dims + 1 
-                    
-                    x[, dims, drop = FALSE]
+                    if (!inherits(x, 'tensorflow.builtin.object')) {
+                      tf$strided_slice(x,
+                                       shape(0, dims[1] - 0),
+                                       shape(.Machine$integer.max, dims[2]),
+                                       shape(1))
+                    } else {
+                      x[, dims, drop = FALSE]
+                    }
                     
                   },
 
@@ -95,7 +99,7 @@ Static <- R6Class('Static',
                                            active_dims = NULL) {
                       
                       super$initialize(input_dim, active_dims)
-                      self$variance <- Param$new(variance, transforms$positive)
+                      self$variance <- Param$new(variance, transforms$positive())
                       
                       self$.parameter_names <- c(self$.parameter_names, '.variance')
                       
@@ -190,7 +194,7 @@ Stationary <- R6Class('Stationary',
                           # - ARD specifies whether the kernel has one lengthscale per dimension
                           # (ARD=TRUE) or a single lengthscale (ARD=False).
                           super$initialize(input_dim, active_dims)
-                          self$variance <- Param$new(variance, transforms$positive)# constrain positive
+                          self$variance <- Param$new(variance, transforms$positive())# constrain positive
                           
                           if (ARD) {
                             
@@ -206,7 +210,7 @@ Stationary <- R6Class('Stationary',
                             
                           }
                           
-                          self$lengthscales <- Param$new(lengthscales, transforms$positive)
+                          self$lengthscales <- Param$new(lengthscales, transforms$positive())
                           self$ARD <- ARD
                           self$.parameter_names <- c(self$.parameter_names, '.lengthscales', '.variance')
                           
@@ -260,8 +264,14 @@ RBF <- R6Class('RBF',
                  
                  K = function (X, X2 = NULL) {
                    X <- self$.slice(X)
-                   X2 <- self$.slice(X2)
-                   tf$mul(self$variance, tf$exp(-self$square_dist(X, X2) / to(2)))
+                   
+                   if (!exists('X2') || is.null(X2))
+                     X2 <- X
+                   else
+                     X2 <- self$.slice(X2)
+                   
+                   tf$mul(self$variance,
+                          tf$exp(-self$square_dist(X, X2) / to(2)))
                  }
                  
                ))
@@ -294,7 +304,7 @@ Linear <- R6Class('Linear',
                    if (ARD)
                      variance <- rep(1, self$input_dim) * variance
                    
-                   self$variance <- Param$new(variance, transforms$positive)
+                   self$variance <- Param$new(variance, transforms$positive())
                    self$.parameter_names <- c(self$.parameter_names, '.variance')
                    
                  },
@@ -426,9 +436,9 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                       # No ARD support for lengthscale or period yet
                       super$initialize(input_dim, active_dims)
                       
-                      self$variance <- Param$new(variance, transforms$positive)
-                      self$lengthscales <- Param$new(lengthscales, transforms$positive)
-                      self$period <- Param$new(period, transforms$positive)
+                      self$variance <- Param$new(variance, transforms$positive())
+                      self$lengthscales <- Param$new(lengthscales, transforms$positive())
+                      self$period <- Param$new(period, transforms$positive())
                       
                       self$.parameter_names <- c(self$.parameter_names, '.period', '.variance', '.lengthscales')
                       

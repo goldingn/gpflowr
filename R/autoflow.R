@@ -23,6 +23,7 @@ AutoFlow <- function (method_name, tf_method, envir, tf_arg_tuples = list()) {
                           method_name)
   
   runnable <- function (...) {
+    
     if (has(self[['.tf_mode_storage']], storage_name)) {
       
       storage <- self[['.tf_mode_storage']][[storage_name]]
@@ -30,7 +31,31 @@ AutoFlow <- function (method_name, tf_method, envir, tf_arg_tuples = list()) {
     } else {
       
       storage <- list()
-      storage[['free_vars']] <- tf$placeholder(tf$float64)
+      storage[['graph']] <- tf$Graph()
+      storage[['session']] <- tf$Session(graph = storage[['graph']])
+      # instance <- self$clone()
+      # instance[['.tf_mode_storage']][[storage_name]] <- storage
+      # instance[['.tf_mode_storage']][[storage_name]][['graph']]$as_default()
+      storage[['graph']]$as_default()
+      
+      # with(self[['.tf_mode_storage']][[storage_name]][['graph']]$as_default() %as% instance,
+      #      {
+             storage[['tf_args']] <- lapply(tf_arg_tuples,
+                                            tf$placeholder)
+             storage[['free_vars']] <- tf$placeholder(tf$float64,
+                                                      shape(NULL))
+             
+             self$make_tf_array(storage[['free_vars']])
+             with(self$tf_mode() %as% instance,
+                  storage[['tf_result']] <- tf_method(storage[['tf_args']]))
+             
+             storage[['feed_dict_keys']] <- self$get_feed_dict_keys()
+             feed_dict <- dict()
+             self$update_feed_dict(storage[['feed_dict_keys']], feed_dict)
+             storage[['session']]$run(tf$initialize_all_variables(),
+                                      feed_dict = feed_dict)
+           # })
+      
       self$make_tf_array(storage$free_vars)
       storage[['tf_args']] <- lapply(tf_arg_tuples, tf$placeholder)
       
@@ -64,6 +89,9 @@ AutoFlow <- function (method_name, tf_method, envir, tf_arg_tuples = list()) {
   }
   
   environment(runnable) <- envir
+  envir$tf_arg_tuples <- tf_arg_tuples
+  envir$tf_method <- tf_method
+
   runnable
 }
 

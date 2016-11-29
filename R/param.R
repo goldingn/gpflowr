@@ -222,12 +222,15 @@ Param <- R6Class('Param',
                      # array, so that it can be sliced for the next Param.
                      
                      # fixed parameters are treated by tf.placeholder
-                     if (self$fixed)
-                       return (0)
+                     if (self$.fixed)
+                       return (0L)
                      free_size <- self$size
-                     x_free <- free_array[1:free_size]
+                     x_free <- tf$strided_slice(free_array,
+                                                shape(0),
+                                                shape(free_size),
+                                                shape(1))
                      mapped_array <- self$transform$tf_forward(x_free)
-                     self$.tf_array <- tf$reshape(mapped_array, self$shape)
+                     self$.tf_array <- tf$reshape(mapped_array, shape(self$shape))
                      self$.log_jacobian <- self$transform$tf_log_jacobian(x_free)
                      return (free_size)
                    },
@@ -236,7 +239,7 @@ Param <- R6Class('Param',
                      # Take the current state of this variable, as stored in
                      # self.value, and transform it to the 'free' state. This is
                      # a numpy method.
-                     if (self$fixed)
+                     if (self$.fixed)
                        return (0)
                      return (self$transform$backward(self$value))
                    },
@@ -254,7 +257,7 @@ Param <- R6Class('Param',
                      # it 'forwards' and store the result in self._array. The values in
                      # self._array can be accessed using self.value
                      # This is a numpy method.
-                     if (self$fixed)
+                     if (self$.fixed)
                        return (0)
 
                      new_x <- self$transform$forward(x)
@@ -569,13 +572,21 @@ Parameterized <- R6Class('Parameterized',
                              # children of this class (that are Parameterized or
                              # Param objects), which then construct their
                              # tf_array variables from consecutive sections.
-                             nrow <- X$get_shape()$as_list()[1]
+                             
+                             for (dh in self$data_holders())
+                               dh$make_tf_array()
                              
                              count <- 0
-                             for (i in seq_along(self$sorted_params()))
-                               count  <- count + self$sorted_params()[[i]]$make_tf_array(X[count:nrow])
-                               
+                             for (p in self$sorted_params()) {
+                               X_sub <- tf$strided_slice(X,
+                                                         shape(count),
+                                                         shape(.Machine$integer.max),
+                                                         shape(1))
+                               count <- count + p$make_tf_array(X_sub)
+                             }
+                             
                              count
+                             
                            },
                            
                            get_free_state = function () {
@@ -588,7 +599,7 @@ Parameterized <- R6Class('Parameterized',
                            get_feed_dict = function () {
                              # Recursively fetch a dictionary matching up fixed-placeholders to
                              # associated values
-                             lapply(c(self$sorted_params(), self$data_holders),
+                             lapply(c(self$sorted_params(), self$data_holders()),
                                     function(x) x$get_feed_dict())
                            },
 
@@ -647,6 +658,17 @@ Parameterized <- R6Class('Parameterized',
                              
                              params
                              
+                           },
+                           
+                           data_holders = function () {
+                             # Return a list of all the child DataHolders                             
+                             
+                             params <- list()
+                             for (name in names(self)) {
+                               if (inherits(self[[name]], 'DataHolder'))
+                                 params[[name]] <- self[[name]]
+                             }
+                             params
                            }
                            
                            # 
@@ -668,19 +690,6 @@ Parameterized <- R6Class('Parameterized',
                            
                            ),
                          active = list(
-                           
-                           data_holders = function (value) {
-                             # Return a list of all the child DataHolders                             
-                             if (!missing(value))
-                               warning ('assignment ignored')
-                             
-                             params <- list()
-                             for (name in names(self)) {
-                               if (inherits(self[[name]], 'DataHolder'))
-                                 params[[name]] <- self[[name]]
-                             }
-                             params
-                           },
                            
                            fixed = function (value) {
                              
