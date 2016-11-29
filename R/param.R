@@ -563,7 +563,7 @@ Parameterized <- R6Class('Parameterized',
                            
                            make_tf_array = function (X) {
                              # Distribute a flat tensorflow array amongst all
-                             # the child parameter of this instance.
+                             # the child parameters of this instance.
                              #
                              # X is a tf placeholder. It gets passed to all the
                              # children of this class (that are Parameterized or

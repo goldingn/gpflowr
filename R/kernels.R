@@ -97,6 +97,8 @@ Static <- R6Class('Static',
                       super$initialize(input_dim, active_dims)
                       self$variance <- Param$new(variance, transforms$positive)
                       
+                      self$.parameter_names <- c(self$.parameter_names, '.variance')
+                      
                       
                     },
                     
@@ -275,8 +277,6 @@ Linear <- R6Class('Linear',
                  
                  ARD = NULL,
                  
-                 parameters = NULL,
-                 
                  initialize = function (input_dim,
                                         variance = 1,
                                         active_dims = NULL,
@@ -295,7 +295,7 @@ Linear <- R6Class('Linear',
                      variance <- rep(1, self$input_dim) * variance
                    
                    self$variance <- Param$new(variance, transforms$positive)
-                   self$parameters <- list(self$variance)
+                   self$.parameter_names <- c(self$.parameter_names, '.variance')
                    
                  },
                  
@@ -429,6 +429,8 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                       self$variance <- Param$new(variance, transforms$positive)
                       self$lengthscales <- Param$new(lengthscales, transforms$positive)
                       self$period <- Param$new(period, transforms$positive)
+                      
+                      self$.parameter_names <- c(self$.parameter_names, '.period', '.variance', '.lengthscales')
                       
                       self$ARD <- FALSE
                       
