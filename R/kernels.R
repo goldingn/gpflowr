@@ -45,6 +45,9 @@ Kern <- R6Class("Kern",
                     
                     autoflow('compute_K_symm',
                              X = tf$placeholder(tf$float64, shape(NULL, NULL)))
+
+                    autoflow('compute_Kdiag',
+                             X = tf$placeholder(tf$float64, shape(NULL, NULL)))
                     
                   },
                   
@@ -75,6 +78,9 @@ Kern <- R6Class("Kern",
                   # with autoflow
                   compute_K_symm = function (X)
                     self$K(X),
+
+                  compute_Kdiag = function (X)
+                    self$Kdiag(X),
                   
                   print = function(x, ...) {
                     msg <- sprintf('%s kernel\n',
