@@ -124,7 +124,7 @@ Parentable <- R6Class('Parentable',
                             return (sprintf('item%i', self$parent$.list$index(self)))
                           
                           if (length(idx) == 0)
-                            stop("mis-specified parent. This Param's .parent does not contain a reference to it.")
+                            stop("mis-specified parent. This Param's parent does not contain a reference to it.")
                           
                           if (length(idx) > 1)
                             stop("This Param appears to be doubly referenced by a parent")
@@ -185,7 +185,7 @@ Param <- R6Class('Param',
                    .log_jacobian = NULL,
                    prior = NULL,
                    transform = NULL,
-                   fixed = FALSE,
+                   .fixed = FALSE,
                    
                    initialize = function (array, transform = transforms$Identity()) {
                      self$value <- as.array(array)
@@ -222,12 +222,15 @@ Param <- R6Class('Param',
                      # array, so that it can be sliced for the next Param.
                      
                      # fixed parameters are treated by tf.placeholder
-                     if (self$fixed)
-                       return (0)
+                     if (self$.fixed)
+                       return (0L)
                      free_size <- self$size
-                     x_free <- free_array[1:free_size]
+                     x_free <- tf$strided_slice(free_array,
+                                                shape(0),
+                                                shape(free_size),
+                                                shape(1))
                      mapped_array <- self$transform$tf_forward(x_free)
-                     self$.tf_array <- tf$reshape(mapped_array, self$shape)
+                     self$.tf_array <- tf$reshape(mapped_array, shape(self$shape))
                      self$.log_jacobian <- self$transform$tf_log_jacobian(x_free)
                      return (free_size)
                    },
@@ -236,7 +239,7 @@ Param <- R6Class('Param',
                      # Take the current state of this variable, as stored in
                      # self.value, and transform it to the 'free' state. This is
                      # a numpy method.
-                     if (self$fixed)
+                     if (self$.fixed)
                        return (0)
                      return (self$transform$backward(self$value))
                    },
@@ -254,7 +257,7 @@ Param <- R6Class('Param',
                      # it 'forwards' and store the result in self._array. The values in
                      # self._array can be accessed using self.value
                      # This is a numpy method.
-                     if (self$fixed)
+                     if (self$.fixed)
                        return (0)
 
                      new_x <- self$transform$forward(x)
@@ -274,25 +277,21 @@ Param <- R6Class('Param',
                        stop ("tensorflow array has not been initialized")
                      else
                        return (self$prior$logp(self$.tf_array) + self$.log_jacobian)
-                   }#,
-                   # 
-                   #                    `$<-` = function (x, i, value) {
-                   #                      # When some attributes are set, we need to recompile the tf model before
-                   #                      # evaluation.
-                   #                      self[[i]] <- value
-                   #                      if (i %in% recompile_keys)
-                   #                        self$highest_parent$.needs_recompile <- TRUE
-                   # 
-                   #                      # when setting the fixed attribute, make or remove a placeholder appropraitely
-                   #                       if (i == 'fixed') {
-                   #                         if (value)
-                   #                           self$.tf_array <- tf$placeholder(dtype = float_type,
-                   #                                                           shape = self$.array$shape,
-                   #                                                           name = self$name)
-                   #                         else
-                   #                           self$.tf_array = NULL
-                   #                       }
-                   #                    },
+                   },
+
+                   `$<-` = function (x, i, value) {
+                     # When some attributes are set, we need to recompile the tf model before
+                     # evaluation.
+                     
+                     self[[i]] <- value
+                     
+                     # if the highest parent if a model, tell it to recompile
+                     if (i %in% recompile_keys() && has(self$highest_parent, '.needs_recompile'))
+                         self$highest_parent$.needs_recompile <- TRUE
+                     
+                     self
+
+                   }
                    
                    # def __str__(self, prepend=''):
                    #   return prepend + \
@@ -324,11 +323,128 @@ Param <- R6Class('Param',
                  )
 )
 
-# DataHolder <- R6Class('DataHolder',
-#                          inherit = Parentable,
-#                          public = list(
-#
-#                          ))
+DataHolder <- R6Class('DataHolder',
+                         inherit = Parentable,
+                         public = list(
+                           
+                           # An object to represent data which needs to be passed to tensorflow for computation.
+                           #
+                           # This behaves in much the same way as a Param (above), but is always
+                           # 'fixed'. On a call to update_feed_dict, a placeholder-numpy pair is added to the feed_dict.
+                           #
+                           # Getting and setting values
+                           # --
+                           #
+                           #   To get at the values of the data, use the value property:
+                           #
+                           #   >>> m = GPflow.model.Model()
+                           # >>> m.x = GPflow.param.DataHolder(np.array([ 0., 1.]))
+                           # >>> print(m.x.value)
+                           # [[ 0.], [ 1.]]
+                           #
+                           # Changing the value of the data is as simple as assignment
+                           # (once the data is part of a model):
+                           #
+                           # >>> m.x = np.array([ 0., 2.])
+                           # >>> print(m.x.value)
+                           # [[ 0.], [ 2.]]
+                           
+                           .array = NULL,
+                           on_shape_change = NULL,
+                           
+                           initialize = function (array, on_shape_change = 'raise') {
+                             # array is a numpy array of data.
+                             # on_shape_change is one of ('raise', 'pass', 'recompile'), and
+                             # determines the behaviour when the data is set to a new value with a
+                             # different shape
+                             
+                             # super$initialize()
+                             # use this only to check the type is integer or float
+                             dt <- self$.get_type(array)
+                             self$.array <- as.array(array)
+                             
+                             if (!on_shape_change %in% c('raise', 'pass', 'recompile'))
+                               stop ('invalid shape change argument')
+                             self$on_shape_change <- on_shape_change
+                             
+                           },
+                           
+                           .get_type = function (array) {
+                             
+                             # Work out what a sensible type for the array is. if the default type
+                             # is float32, downcast 64bit float to float32. For ints, assume int32
+                             if (is.integer(X))
+                               tf$int32
+                             else if (is.numeric(X))
+                               tf$float64
+                             else 
+                               stop ('unknown data type')
+                           },
+                           
+                           get_feed_dict_keys = function () {
+                             list(self = self$.tf_array)
+                           },
+                           
+                           update_feed_dict = function (key_dict, feed_dict) {
+                             feed_dict[[key_dict[[self]]]] <- self$.array
+                           },
+                           
+                           make_tf_array = function() {
+                             
+                             # get the right rank, but fill shape with NULLs
+                             shp <- replicate(length(dim(self$.array)),
+                                              NULL,
+                                              simplify = FALSE)
+                             
+                             # create placeholder
+                             self$.tf_array <- tf$placeholder(dtype = self$.get_type(self$.array),
+                                                              shape = shp,
+                                                              name = self$name)
+                             
+                           },
+                           
+                           set_data = function (array) {
+                             # Setting a data into self._array before any TensorFlow execution.
+                             # If the shape of the data changes, then either:
+                             #   - raise an exception
+                             # - raise the recompilation flag.
+                             # - do nothing
+                             # according to the option in self.on_shape_change.
+                             if (all.equal(self$shape(), dim(array))) {
+                               
+                               self.array[] <- array[]
+                               
+                             } else {
+                               
+                               if (self.on_shape_change == 'raise') {
+                                 
+                                 stop ("The shape of this data must not change. (perhaps make the model again from scratch?)")
+                                 
+                               } else if (self.on_shape_change == 'recompile') {
+                                 
+                                 self$.array <- array
+                                 
+                                 # if the highest parent if a model, tell it to recompile
+                                 if (has(self$highest_parent, '.needs_recompile'))
+                                   self$highest_parent$.needs_recompile <- TRUE
+                                 
+                               } else if (self.on_shape_change == 'pass') {
+                                 
+                                 self$.array <- array
+                                 
+                               }
+                            }
+                               
+                           },
+                           
+                           value = function ()
+                             self$.array,
+                           
+                           shape = function ()
+                             dim(self$.array)
+
+
+                         ))
 
 Parameterized <- R6Class('Parameterized',
                          inherit = Parentable,
@@ -337,24 +453,21 @@ Parameterized <- R6Class('Parameterized',
                            x = NULL,
                            .tf_mode = FALSE,
                            .tf_mode_storage = list(),
-                           
-                           initialize = function () {
-                             self$.tf_mode <- FALSE
-                           },
+                           .parameter_names = c(),
                            
                            get_parameter_dict = function (d = NULL) {
                              
                              if (is.null(d))
                                d  <- list()
                              
-                             for (p in self$sorted_params)
+                             for (p in self$sorted_params())
                                p$get_parameter_dict(d)
                              
                              d
                            },
                            
                            set_parameter_dict = function (d) {
-                             for (p in self$sorted_params)
+                             for (p in self$sorted_params())
                                p$set_parameter_dict(d)
                            },
 
@@ -370,38 +483,115 @@ Parameterized <- R6Class('Parameterized',
                              o
                            },
                            
-                           # `$<-` = function (x, i, value) {
-                           #
-                           # },
+                           `$<-` = function (x, i, value) {
+                             # When a value is assigned to a Param, put that
+                             # value in the Param's array (rather than just
+                             # overwriting that Param with the new value). i.e.
+                             # this
+                             # 
+                             # >>> p = Parameterized()
+                             # >>> p.p = Param(1.0)
+                             # >>> p.p = 2.0
+                             # 
+                             # should be equivalent to this
+                             # 
+                             # >>> p = Parameterized()
+                             # >>> p.p = Param(1.0)
+                             # >>> p.p._array[...] = 2.0
+                             # 
+                             # Additionally, when Param or Parameterized objects
+                             # are added, let them know that this node is the
+                             # _parent
+                             
+                             params <- self$sorted_params()
+                             
+                             if (i %in% names(params)) {
+                               
+                               p <- params[[i]]
+                               
+                               # if the existing attribute is a parameter, and
+                               # the value is an array (or float, int), then set
+                               # the .array of that parameter & quit
+                               if (inherits(p, 'Param') &
+                                   inherits(value, c('array', 'numeric', 'integer'))) {
+                                 p$.array[] <- value
+                                 return (invisible(NULL))
+                               }
+                                 
+                               # if the existing attribute is a Param (or
+                               # Parameterized), and the new attribute is too,
+                               # replace the attribute and set the model to 
+                               # recompile if necessary.
+                               if (inherits(p, c('Param', 'Parameterized')) &
+                                   inherits(value, c('Param', 'Parameterized')))
+                                 p$parent(NULL)
+                                 
+                               if (has(self$highest_parent, '.needs_recompile'))
+                                 self$highest_parent$.needs_recompile <- TRUE
+                               
+                               # if the existing attribute is a DataHolder, set
+                               # the value of the data inside & quit
+                               if (inherits(p, 'DataHolder') & inherits(value, 'array')) {
+                                 p$set_data(value)
+                                 return (invisible(NULL))
+                               }
+                                 
+                             }
+
+                             # otherwise (if not a parameter) use the standard setattr
+                             self[[i]] <- value
+                                 
+                             # make sure a new child node knows this is the .parent:
+                             if (inherits(value, 'Parentable') & i != 'parent')
+                               value$parent <- self
+                             
+                             # recompile if told to
+                             if (i == '.needs_recompile')
+                               self$.kill_autoflow()
+                             
+                             self
+
+                           },
                            
                            .kill_autoflow = function () {
                              # remove all AutoFlow storage dicts recursively
                              self$.tf_mode_storage <- list()
                              
-                             for (i in seq_len(self$sorted_params)) {
-                               if (inherits(self$sorted_params[[i]]))
-                                 self$sorted_params[[i]]$.kill_autoflow()
+                             for (i in seq_len(self$sorted_params())) {
+                               if (inherits(self$sorted_params()[[i]], 'Parameterized'))
+                                 self$sorted_params()[[i]]$.kill_autoflow()
                              }
                               
                            },
                            
                            make_tf_array = function (X) {
+                             # Distribute a flat tensorflow array amongst all
+                             # the child parameters of this instance.
+                             #
                              # X is a tf placeholder. It gets passed to all the
                              # children of this class (that are Parameterized or
                              # Param objects), which then construct their
                              # tf_array variables from consecutive sections.
-                             nrow <- X$get_shape()$as_list()[1]
+                             
+                             for (dh in self$data_holders())
+                               dh$make_tf_array()
                              
                              count <- 0
-                             for (i in seq_along(self$sorted_params))
-                               count  <- count + self$sorted_params[[i]]$make_tf_array(X[count:nrow])
-                               
+                             for (p in self$sorted_params()) {
+                               X_sub <- tf$strided_slice(X,
+                                                         shape(count),
+                                                         shape(.Machine$integer.max),
+                                                         shape(1))
+                               count <- count + p$make_tf_array(X_sub)
+                             }
+                             
                              count
+                             
                            },
                            
                            get_free_state = function () {
                              # recurse get_free_state on all child parameters, and hstack them.
-                             free_states <- lapply(self$sorted_params,
+                             free_states <- lapply(self$sorted_params(),
                                               function(x) x$get_free_state())
                              array(do.call(c, free_states))
                            },
@@ -409,7 +599,7 @@ Parameterized <- R6Class('Parameterized',
                            get_feed_dict = function () {
                              # Recursively fetch a dictionary matching up fixed-placeholders to
                              # associated values
-                             lapply(c(self$sorted_params, self$data_holders),
+                             lapply(c(self$sorted_params(), self$data_holders()),
                                     function(x) x$get_feed_dict())
                            },
 
@@ -418,8 +608,8 @@ Parameterized <- R6Class('Parameterized',
                              nrow <- x$get_shape()$as_list()[1]
                              
                              count <- 0
-                             for (name in names(self$sorted_params))
-                               count  <- count + self$sorted_params[[name]]$set_state(x[count:nrow])
+                             for (name in names(self$sorted_params()))
+                               count  <- count + self$sorted_params()[[name]]$set_state(x[count:nrow])
                              
                              count
                            },
@@ -440,14 +630,47 @@ Parameterized <- R6Class('Parameterized',
 
                            build_prior = function () {
                              # Build a tf expression for the prior by summing all child-node priors.
-                             nparam <- length(self$sorted_params)
-                             pri <- self$sorted_params[[1]]$build_prior()
+                             nparam <- length(self$sorted_params())
+                             pri <- self$sorted_params()[[1]]$build_prior()
                              
                              if (nparam > 0) {
                                for (i in 2:nparam)
-                                 pri <- pri + self$sorted_params[[i]]$build_prior()
+                                 pri <- pri + self$sorted_params()[[i]]$build_prior()
                              }
-                           }#,
+                           },
+                           
+                           sorted_params = function () {
+                             
+                             # Return a list of all the child parameters, sorted by id. This makes
+                             # sure they're always in the same order.
+
+                             # find parameters elements
+                             names <- self$.parameter_names
+                             
+                             # if there were some, fetch and sort them
+                             if (length(names) > 0) {
+                               params <- lapply(names, function(name) self[[name]])
+                               names(params) <- names
+                               params <- params[order(names)]
+                             } else {
+                               params <- c()
+                             }
+                             
+                             params
+                             
+                           },
+                           
+                           data_holders = function () {
+                             # Return a list of all the child DataHolders                             
+                             
+                             params <- list()
+                             for (name in names(self)) {
+                               if (inherits(self[[name]], 'DataHolder'))
+                                 params[[name]] <- self[[name]]
+                             }
+                             params
+                           }
+                           
                            # 
                            # str = function (object, prepend = '') {
                            #   
@@ -468,53 +691,17 @@ Parameterized <- R6Class('Parameterized',
                            ),
                          active = list(
                            
-                           sorted_params = function (value) {
-                             # Return a list of all the child parameters, sorted by id. This makes
-                             # sure they're always in the same order.
-                             
-                             if (!missing(value))
-                               warning ('assignment ignored')
-                             
-                             # find names of elements
-                             names <- names(self)
-                             names <- names[names != 'parent']
-                             
-                             # pull out those that are Param-esque
-                             params <- list()
-                             for (name in names) {
-                               if (inherits(self[[name]], c('Param', 'Parameterized')))
-                                 params[[name]] <- self[[name]]
-                             }
-                             
-                             # order them
-                             params <- params[order(names(params))]
-                               
-                           },
-                           
-                           data_holders = function (value) {
-                             # Return a list of all the child DataHolders                             
-                             if (!missing(value))
-                               warning ('assignment ignored')
-                             
-                             params <- list()
-                             for (name in names(self)) {
-                               if (inherits(self[[name]], 'DataHolder'))
-                                 params[[name]] <- self[[name]]
-                             }
-                             params
-                           },
-                           
                            fixed = function (value) {
                              
                              if (!missing(value)) {
                                
                                for (name in names(self))
-                                 self[[name]]$fixed <- value
+                                 self[[name]]$.fixed <- value
                                
                              } else {
                                
-                               ans <- vapply(self$sorted_params,
-                                             function(x) x$fixed,
+                               ans <- vapply(self$sorted_params(),
+                                             function(x) x$.fixed,
                                              FALSE)
                                
                                return (ans)

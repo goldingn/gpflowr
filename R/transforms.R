@@ -41,7 +41,7 @@ Identity <- R6Class('Identity',
                         tf$identity(x),
                       
                       tf_log_jacobian = function (x)
-                        tf$zeros(shape(1),tf$float64),
+                        tf$zeros(shape(1), tf$float64),
                       
                       str = function (x, ...)
                         'none'
@@ -103,7 +103,7 @@ Log1pe <- R6Class('Log1pe',
                     },
                     
                     tf_log_jacobian = function (x)
-                      -tf$reduce_sum(tf$log(1 + tf$exp(-x))),
+                      -tf$reduce_sum(tf$log(tf$constant(1, tf$float64) + tf$exp(-x))),
                     
                     str = function (x, ...)
                       '+ve'
@@ -141,7 +141,7 @@ Logistic <- R6Class('Logistic',
                       },
                       
                       tf_log_jacobian = function (x) {
-                        tf$reduce_sum(x - 2 * tf$log(tf$exp(x) + 1) +
+                        tf$reduce_sum(x - tf$constant(2, tf$float64) * tf$log(tf$exp(x) + tf$constant(1, tf$float64)) +
                                         tf$log(self$.b - self$.a)) 
                       },
                       

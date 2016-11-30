@@ -162,6 +162,7 @@ property <- function (name, public = TRUE) {
 
 # functor to return a default active function for kernel parameters
 # the name of the object this function is assigned to *must* point to a Param
+# by default it is assumed that the active binding is the 
 kernel_parameter <- function (name, public = TRUE) {
   
   obj <- paste(ifelse(public,
@@ -174,14 +175,10 @@ kernel_parameter <- function (name, public = TRUE) {
   
   fun_text <- sprintf("
     fun <- function (value) {
-      if (missing(value)) {
+      if (missing(value))
         return (%s)
-      } else {
-        if (!inherits(value, 'Param')){
-          stop ('parameters must be Param objects')
-        }
+      else
         %s <- value
-      }
     }", val, obj)
   
   fun <- eval(parse(text = fun_text))
@@ -216,3 +213,6 @@ tf_mul_n <- function (list) {
   ans
   
 }
+
+recompile_keys <- function ()
+  c('prior', 'transform', 'fixed')
