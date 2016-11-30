@@ -30,8 +30,8 @@ Kern <- R6Class("Kern",
                       
                     } else {
                       
-                      if ( !(is.numeric(active_dim) &
-                             is.vector(active_dim) &&
+                      if ( !(is.numeric(active_dims) &
+                             is.vector(active_dims) &&
                              length(active_dims) == input_dim) )
                         stop ('active_dims must be a numeric vector with length input_dim')
                       
@@ -480,6 +480,95 @@ PeriodicKernel <- R6Class('PeriodicKernel',
                     lengthscales = kernel_parameter(".lengthscales")
                   ))
 
+Coregion <- R6Class('Coregion',
+                   # A Coregionalization kernel. The inputs to this kernel are _integers_
+                   # (we cast them from floats as needed) which usually specify the
+                   # *outputs* of a Coregionalization model.
+
+                   # The parameters of this kernel, W, kappa, specify a positive-definite
+                   # matrix B.
+                   #  
+                   #   B = W W^T + diag(kappa) .
+                   #  
+                   # The kernel function is then an indexing of this matrix, so
+                   #  
+                   #   K(x, y) = B[x, y] .
+                   #  
+                   # We refer to the size of B as "num_outputs x num_outputs", since this is
+                   # the number of outputs in a coreginoalization model. We refer to the
+                   # number of columns on W as 'rank': it is the number of degrees of
+                   # correlation between the outputs.
+                   #  
+                   # NB. There is a symmetry between the elements of W, which creates a
+                   # local minimum at W=0. To avoid this, it's recommended to initialize the
+                   # optimization (or MCMC chain) using a random W.
+
+                   inherit = Kern,
+
+                   public = list(
+
+                    output_dim = NULL,
+
+                    rank = NULL,
+
+                    .W = NULL,
+
+                    .kappa = NULL,
+
+                    initialize = function (input_dim,
+                                           output_dim,
+                                           rank = 1,
+                                           active_dims = NULL) {
+
+                      if ( input_dim != 1 )
+                        stop ('Coregion kernel in 1D only')
+                      
+                      super$initialize(input_dim, active_dims)
+                      
+                      self$output_dim <- Param$new(output_dim)
+                      self$rank <- Param$new(rank)
+                      self$W <- Param$new(matrix(0,output_dim,rank))
+                      self$kappa = Param$new(rep(1,output_dim), transforms$positive)
+                      
+                    },
+
+                    K = function (X, X2 = NULL) {
+                      
+                      X <- self$.slice(X)
+                      X <- tf$cast(X[, 1], tf$int32)
+                      X2 <- self$.slice(X2)
+                      if (!exists('X2') || is.null(X2)){
+                        X2 <- X
+                      }else{
+                        X2 <- tf$cast(X2[, 1], tf$int32)
+                      }
+                      
+                      B = tf$matmul(self$W, tf$transpose(self$W)) + tf$diag(self$kappa)
+                      
+                      tf$gather(tf$transpose(tf$gather(B, X2)), X)
+                      
+                    },
+
+                    Kdiag = function (X, X2 = NULL) {
+                      
+                      X <- self$.slice(X)
+                      X <- tf$cast(X[, 1], tf$int32)
+                      
+                      Bdiag = tf$reduce_sum(tf$square(self$W), 1) + self$kappa
+                      
+                      tf$gather(Bdiag, X)
+                      
+                    }
+
+                  ),
+                  active = list(
+                    W = kernel_parameter(".W"),
+                    kappa = kernel_parameter(".kappa")
+                  )
+                )
+
+
+
 make_kernel_names <- function (kern_list) {
   # Take a list of kernels and return a list of strings, giving each kernel a
   # unique name.
@@ -665,4 +754,5 @@ kernels <- module(White,
                   Matern32,
                   Matern52,
                   Cosine,
-                  PeriodicKernel)
+                  PeriodicKernel,
+                  Coregion)
