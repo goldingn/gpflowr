@@ -34,3 +34,4 @@ Collate:
     'module-class.R'
     'kernels.R'
     'transforms.R'
+    'tf_functions.R'

@@ -14,15 +14,17 @@
 # method_name is a string saying which method to overwrite
 # tf_method is the function itself
 # envir is the environment of the original method
-# tf_arg_tuples is a list of tf dtypes
+# placeholder_list is a list of placeholders (rank but not shape defined)
 
 #' @importFrom utils capture.output
-AutoFlow <- function (method_name, tf_method, envir, tf_arg_tuples = list()) {
+AutoFlow <- function (method_name, tf_method, placeholder_list) {
   
   storage_name <- sprintf('_%s_AF_storage',
                           method_name)
   
   runnable <- function (...) {
+    
+    R_args <- list(...)
     
     if (has(self[['.tf_mode_storage']], storage_name)) {
       
@@ -31,67 +33,36 @@ AutoFlow <- function (method_name, tf_method, envir, tf_arg_tuples = list()) {
     } else {
       
       storage <- list()
-      storage[['graph']] <- tf$Graph()
-      storage[['session']] <- tf$Session(graph = storage[['graph']])
-      # instance <- self$clone()
-      # instance[['.tf_mode_storage']][[storage_name]] <- storage
-      # instance[['.tf_mode_storage']][[storage_name]][['graph']]$as_default()
-      storage[['graph']]$as_default()
-      
-      # with(self[['.tf_mode_storage']][[storage_name]][['graph']]$as_default() %as% instance,
-      #      {
-             storage[['tf_args']] <- lapply(tf_arg_tuples,
-                                            tf$placeholder)
-             storage[['free_vars']] <- tf$placeholder(tf$float64,
-                                                      shape(NULL))
-             
-             self$make_tf_array(storage[['free_vars']])
-             with(self$tf_mode() %as% instance,
-                  storage[['tf_result']] <- tf_method(storage[['tf_args']]))
-             
-             storage[['feed_dict_keys']] <- self$get_feed_dict_keys()
-             feed_dict <- dict()
-             self$update_feed_dict(storage[['feed_dict_keys']], feed_dict)
-             storage[['session']]$run(tf$initialize_all_variables(),
-                                      feed_dict = feed_dict)
-           # })
-      
-      self$make_tf_array(storage$free_vars)
-      storage[['tf_args']] <- lapply(tf_arg_tuples, tf$placeholder)
-      
-      # with self temporarily in tf_mode, execute tf_method on self,
-      # optionally including placeholders
-      with(self$tf_mode %as% instance,
-           storage[['tf_result']] <- do.call(tf_method,
-                                             c(instance, storage[['tf_args']])))
-      
-      # prep the session
       storage[['session']] <- tf$Session()
-      storage[['session']]$run(tf$initialize_all_variables(),
-                               feed_dict = self$get_feed_dict())
       
-      # store the storage object
+      storage[['tf_args']] <- placeholder_list
+      storage[['free_vars']] <- tf$placeholder(tf$float64, shape(NULL))
+      
+      self$make_tf_array(storage[['free_vars']])
+      storage[['tf_result']] <- do.call(tf_method, storage[['tf_args']])
+             
+      # store the storage object for next time
       self[['.tf_mode_storage']][[storage_name]] <- storage
       
     }
     
     # create an appropriate dict
-    # align the elements of dots with the tf_arg_tuples to form a feed_dict
-    R_args <- list(...)
-    names(R_args) <- unlist(tf_arg_tuples)
-    feed_dict <- dict(R_args)
-    feed_dict[storage[['free_vars']]] <- self$get_free_state()
-    feed_dict <- c(feed_dict, self$get_feed_dict())
+    feed_dict <- dictify(placeholder_list, R_args)
     
     # exeecute the method, using the newly created dict
-    storage[['session']]$run(storage[['tf_result']], feed_dict = feed_dict)
+    storage[['session']]$run(storage[['tf_result']],
+                             feed_dict = feed_dict)
     
   }
   
-  environment(runnable) <- envir
-  envir$tf_arg_tuples <- tf_arg_tuples
+  # for some reason, the lexical scoping is broken, and these objects aren't
+  # visible to runnable, so define them explicilty
+  envir <- environment(tf_method)
+  envir$placeholder_list <- placeholder_list
   envir$tf_method <- tf_method
-
+  envir$storage_name <- storage_name
+  environment(runnable) <- envir
+  
   runnable
 }
 
@@ -100,26 +71,25 @@ AutoFlow <- function (method_name, tf_method, envir, tf_arg_tuples = list()) {
 # initialize() method. dots accepts dtype objects to create placeholders for the
 # arguments of the method being overwritten
 autoflow <- function(name, ...) {
+  
+  # list of placeholder tensors
+  placeholder_list <- list(...)
 
-  # create the dtype list as a character string
-  dtypes <- deparse(substitute(list(...)))
-  dtype_string <- ifelse(dtypes == 'list()',
-                         '',
-                         sprintf(', %s', dtypes))
+  # grab the R6 object, and the function we're overwriting  
+  self <- parent.frame()$self
+  tf_method <- self[[name]]
+  
+  # create a new environment to put the method in
+  envir <- new.env()
+  environment(tf_method) <- envir
+  
+  af_method <- AutoFlow(name, tf_method, placeholder_list)
+  
+  # unlock the method, assign the new function, and reassign
+  unlockBinding(name, self)
+  self[[name]] <- af_method
+  lockBinding(name, self)
+  
+  self
 
-  # in the parent environment, unlock the method, replace it with the autoflowed
-  # version (avoiding shallow copy), then relock it
-  txt <- sprintf("unlockBinding('%s', self)
-                 tf_method <- self$%s
-                 envir <- environment(self$%s)
-                 self$%s <- AutoFlow('%s', tf_method, envir%s)
-                 lockBinding('%s', self)",
-                 name,
-                 name,
-                 name,
-                 name, name, dtype_string,
-                 name)
-
-  eval(parse(text = txt),
-       envir = parent.frame())
 }

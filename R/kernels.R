@@ -39,8 +39,12 @@ Kern <- R6Class("Kern",
                     }
                     
                     # add autoflow to the compute methods
-                    autoflow('compute_K', tf$float64, tf$float64)
-                    autoflow('compute_K_symm', tf$float64)
+                    self <- autoflow('compute_K',
+                             X = tf$placeholder(tf$float64, shape(NULL, NULL)),
+                             Z = tf$placeholder(tf$float64, shape(NULL, NULL)))
+                    
+                    self <- autoflow('compute_K_symm',
+                             X = tf$placeholder(tf$float64, shape(NULL, NULL)))
                     
                   },
                   
@@ -50,14 +54,10 @@ Kern <- R6Class("Kern",
                     # if X isn't a tensorflow object, index from 1
                     dims <- self$active_dims
                     
-                    if (!inherits(x, 'tensorflow.builtin.object')) {
-                      tf$strided_slice(x,
-                                       shape(0, dims[1] - 0),
-                                       shape(.Machine$integer.max, dims[2]),
-                                       shape(1))
-                    } else {
+                    if (inherits(x, 'tensorflow.builtin.object'))
+                      tf_extract_columns(x, dims - 1)
+                    else
                       x[, dims, drop = FALSE]
-                    }
                     
                   },
 
