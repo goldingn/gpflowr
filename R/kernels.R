@@ -39,11 +39,11 @@ Kern <- R6Class("Kern",
                     }
                     
                     # add autoflow to the compute methods
-                    self <- autoflow('compute_K',
+                    autoflow('compute_K',
                              X = tf$placeholder(tf$float64, shape(NULL, NULL)),
                              Z = tf$placeholder(tf$float64, shape(NULL, NULL)))
                     
-                    self <- autoflow('compute_K_symm',
+                    autoflow('compute_K_symm',
                              X = tf$placeholder(tf$float64, shape(NULL, NULL)))
                     
                   },
