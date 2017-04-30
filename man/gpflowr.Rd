@@ -15,7 +15,7 @@
   default printing of GPflow objects.
   
   The only exported objects in the package are the function
-  \code{\link{gpflow_available()}} which checks the installation, and the
+  \code{\link{gpflow_available}} which checks the installation, and the
   imported python module \code{\link{gpflow}}. The documentation for the
   module provides a simple example of fitting a GP model using this package.
 }

@@ -8,37 +8,39 @@
 #'   access the various methods via the \code{$} operator. For example, to 
 #'   access the submodule of kernel constructor functions type 
 #'   \code{gpflow$kernels}.
+#'   
 #'   \code{gpflow_available()} tests whether the GPflow module is installed and  
 #'   available to the version of Python being used by reticulate.
 #'   
-#' @details reticulate converts R objects to pyhton objects on the fly. It won't
+#' @details reticulate converts R objects to python objects on the fly. It won't
 #'   always guess how to do that correctly though, so here are a few gotchas to
 #'   look out for:
 #'   \itemize{
-#'     \item{data - }{GPflow expects data vectors to be column vectors. Vectors
+#'     \item{data - }{GPflow expects vectors to be *column* vectors. Vectors
 #'     should there be converted to one-column matrices before being passed to
-#'     most functions, as in the example below.}
+#'     most functions. E.g. using \code{matrix()}, as in the example below.}
 #'     \item{integers - }{Python (and therefore GPflow) is more stringent about 
-#'     integers being integers than R is. For example, when specifying the 
-#'     number of active dimensions of a kernel, you should make sure the number 
-#'     passed is of type integer, not numeric. In most cases that just means
-#'     switching \code{1} to \code{1L} etc.}
+#'     integers than R is. For example, when specifying the number of active 
+#'     dimensions of a kernel, you should make sure the number passed is of type
+#'     integer, not numeric. In most cases that just means adding an '\code{L}',
+#'     i.e. switching \code{1} to \code{1L} etc.}
 #'   }
 #'   
-#'   To tidy up your code, you can rename \code{gpflow} by assigning it to a new
-#'   object (e.g. \code{gp <- gpflow}).
-#'   
+#' If you want to tidy up your code, you can rename \code{gpflow} by assigning
+#' it to a new object (e.g. \code{gp <- gpflow}).
+#' 
 #' @section Documentation: The submodules and methods in \code{gpflow} are not 
-#'   documented separately in this package. You can access them at 
-#'   \url{http://gpflow.readthedocs.io/en/latest/}. If you're using a recent 
-#'   version of the Rstudio editor, you can also get inline help and 
-#'   autocompletion by hitting the tab key.
+#'   documented in this package. You can access the python docs at 
+#'   \url{http://gpflow.readthedocs.io/en/latest/}.
+#'   
+#'   If you're using a recent version of the Rstudio editor, you can also get
+#'   inline help and autocompletion by hitting the tab key.
 #'   
 #' @examples
 #' 
 #' if (gpflow_available()) {
 #' 
-#'   # translation of the GP regression example from GPflow:
+#'   # translation of the simple GP regression example from GPflow:
 #'   # http://gpflow.readthedocs.io/en/latest/notebooks/regression.html
 #'   
 #'   # fake data

@@ -42,14 +42,15 @@ purge_python_boldface <- function (text) {
 }
 
 # clean up the str() method for Parentable objects
+#' @importFrom utils capture.output str
 #' @export
-str.GPflow.param.Parentable <- function (x, ...) {
+str.GPflow.param.Parentable <- function (object, ...) {
   
   # clone the object, strip gpflow classes from it, & capture output of str()
   # (to stop recursion without calling an unexported function from reticulate)
-  x_tmp <- clone_env(x)
-  x_tmp <- remove_gpflow_classes(x_tmp)
-  out <- capture.output(str(x_tmp, ...))
+  object_tmp <- clone_env(object)
+  object_tmp <- remove_gpflow_classes(object_tmp)
+  out <- capture.output(str(object_tmp, ...))
   
   # remove boldface from python output & dump to the console
   out_clean <- purge_python_boldface(out)  
