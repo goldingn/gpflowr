@@ -1,53 +1,42 @@
-language: r
-cache: packages
 sudo: required
+language: r
+warnings_are_errors: false
 dist: trusty
 
-# python update & TensorFlow installation
-before_install:
- - export PATH=$(echo $PATH | tr ':' "\n" | sed '/\/opt\/python/d' | tr "\n" ":" | sed "s|::|:|g")
- - source travis_install.sh
-
-# Install magick++ for pkgdown
-apt_packages:
- - libmagick++-dev
-
-# Install packages needed to documentation, testing and code coverage
-r_packages:
- - testthat
- - roxygen2
- - covr
-
-# The tensorflow R API isn't on CRAN yet, and we need the latest pkgdown and rmarkdown
 r_github_packages:
- - rstudio/tensorflow
- - hadley/pkgdown 
- - rstudio/rmarkdown
+ - rstudio/reticulate
 
-## After success update the code coverage
+r_packages:
+  - tensorflow
+  - testthat
+  - covr
+
+cache:
+  packages: true
+  directories:
+    - $HOME/.cache/pip
+
+addons:
+  apt:
+    sources:
+      ubuntu-toolchain-r-test
+    packages:
+      - libmagick++-dev
+      - wget
+      - libatlas3gf-base
+      - libatlas-dev
+      - python-joblib
+      - python-dev
+
+before_install:
+  - pip install --upgrade pip
+  - pip install numpy
+  - pip install tensorflow
+  - pip install GPflow 
+
 after_success:
- - Rscript -e 'library(covr);codecov()'
- - bash .deploy_pkgdown.sh
- 
-# Warnings don't fail build
-warnings_are_errors: false
+  - Rscript -e "covr::codecov()"
 
-## Email notification if the package pass status changes
-notifications:
 email:
   on_success: change
   on_failure: change
- 
-## Set up the matrix of different runs
-env:
-  global:
-    - ENCRYPTION_LABEL: "53e3c88c3ce6"
-    - COMMIT_AUTHOR_EMAIL: "goldingn35@gmail.com" 
-  matrix:
-    - r: release
-      not_cran: false
-      r_check_args: "--no-manual --as--cran"
-    - r: devel
-      not_cran: false
-      r_check_args: "--no-manual --as--cran"
-      
