@@ -10,7 +10,7 @@ The package is a very thin wrapper around a [reticulate](https://github.com/rstu
 
 #### Installation
 
-`gpflowr` isn't yet on CRAN, and also depends on a version of `reticulate` that isn't on CRAN. To install `gpflowr`, you can do:
+`gpflowr` isn't yet on CRAN, and also depends on GPflow and a version of `reticulate` that isn't on CRAN. Once you've [installed GPflow](https://github.com/GPflow/GPflow#install), you can install `gpflowr` like this:
 
 ```r
 devtools::install_github('rstudio/reticulate')
