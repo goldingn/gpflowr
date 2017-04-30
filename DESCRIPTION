@@ -1,7 +1,8 @@
 Package: gpflowr
 Type: Package
 Title: Gaussian Process Modelling Using TensorFlow
-Version: 0.1.0
+Version: 0.1.1
+Date: 2017-04-30
 Authors@R: c(
 	person("Nick", "Golding", role = c("aut", "cre"), email = "nick.golding.research@gmail.com")
 	)
@@ -17,21 +18,10 @@ LazyData: true
 URL: https://github.com/goldingn/gpflowr
 BugReports: https://github.com/goldingn/gpflowr/issues
 SystemRequirements: Python (>= 2.7.0) with header files and shared library;
-    TensorFlow (https://www.tensorflow.org/)
-Depends:
-    R (>= 3.0)
-RoxygenNote: 5.0.1
+    TensorFlow (https://www.tensorflow.org/);
+    GPflow (https://github.com/GPflow/GPflow)
 Imports:
-    R6,
-    tensorflow
+    reticulate (>= 0.7.0.9001)
 Suggests:
     testthat
-Collate:
-    'R6-magic.R'
-    'autoflow.R'
-    'gpflowr-package.R'
-    'param.R'
-    'module-class.R'
-    'kernels.R'
-    'transforms.R'
-    'tf_functions.R'
+RoxygenNote: 6.0.1
