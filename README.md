@@ -14,7 +14,7 @@ The package is a very thin wrapper around a [reticulate](https://github.com/rstu
 
 ```r
 devtools::install_github('rstudio/reticulate')
-devtools::install_github('goldingn/gpflow')
+devtools::install_github('goldingn/gpflowr')
 ```
 
 #### Contributing
