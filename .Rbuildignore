@@ -1,8 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^.travis.yml$
-^travis_install.sh$
 ^readme.md$
 ^LICENSE$
-^deploy_key.enc$
-^.deploy_pkgdown.sh$
