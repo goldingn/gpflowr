@@ -1,0 +1,2 @@
+GPregression    Simple Gaussian Process regression example, adapted from the GPflow documentation
+Kernels         Examples on how to manipulate kernels, adapted from the GPflow documentation
