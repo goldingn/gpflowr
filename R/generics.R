@@ -12,9 +12,8 @@
 
 
 
-
 # simple cloning of environments
-clone_env = function (env) {
+clone_env <- function (env) {
   # make a new environment in the same position
   new_env <- new.env(parent.env(env), hash = FALSE)
   
@@ -30,6 +29,7 @@ clone_env = function (env) {
 remove_gpflow_classes <- function (x) {
   classes <- class(x)
   class(x) <- classes[-grep('^GPflow', classes)]
+  class(x) <- classes[-grep('^gpflow', classes)]
   x
 }
 
@@ -59,3 +59,15 @@ str.GPflow.param.Parentable <- function (object, ...) {
   invisible(NULL)
   
 }
+
+
+# export for versions with renamed module
+
+#' @export
+`+.gpflow.kernels.Kern` <- `+.GPflow.kernels.Kern`
+
+#' @export
+`*.gpflow.kernels.Kern` <- `*.GPflow.kernels.Kern`
+
+#' @export
+str.gpflow.param.Parentable <- str.GPflow.param.Parentable

@@ -63,10 +63,20 @@
 #'   lines(mean ~ xx)
 #'  
 #' }
-#' 
-gpflow <- reticulate::import('GPflow', delay_load = TRUE)
+NULL
+
+which_gpflow <- function () {
+  options <- c("GPflow", "gpflow")
+  available <- vapply(options, reticulate::py_module_available, FALSE)
+  options[available]
+}
 
 #' @rdname gpflow
 #' @export
-gpflow_available <- function ()
-  py_module_available("GPflow")
+gpflow_available <- function () {
+  which <- which_gpflow()
+  length(which) > 0
+}
+
+#' @export
+gpflow <- reticulate::import(which_gpflow(), delay_load = TRUE)
