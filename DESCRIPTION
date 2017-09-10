@@ -1,8 +1,8 @@
 Package: gpflowr
 Type: Package
 Title: Gaussian Process Modelling Using TensorFlow
-Version: 0.1.1
-Date: 2017-04-30
+Version: 0.1.2
+Date: 2017-09-10
 Authors@R: c(
 	person("Nick", "Golding", role = c("aut", "cre"), email = "nick.golding.research@gmail.com")
 	)
